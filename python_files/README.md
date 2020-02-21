@@ -11,6 +11,12 @@ This will create a raw buffer file "output.0"
 To convert the output to a text file, run read_files.py (requires numpy and Python 3 because I'm lazy)
 
 ```bash
+python3 -m pip install numpy
+```
+
+This will throw errors, but numpy seemed to successfully install anyway...?
+
+```bash
 python3 read_files.py
 ```
 
