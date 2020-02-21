@@ -49,6 +49,7 @@ initialisation failed (cannot open /dev/uio5)
 ```
 
 To mitigate this, you need to modify the boot file:
+[https://www.freebasic.net/forum/viewtopic.php?t=22501&start=240]
 
 ```bash
 sudo nano /boot/uEnv.txt
