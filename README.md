@@ -4,6 +4,8 @@ My attempt at setting up and documenting the use of the Beaglebone Black PRU for
 __Using this Image:__
 https://debian.beagleboard.org/images/bone-debian-9.5-iot-armhf-2018-10-07-4gb.img.xz
 
+__NOTE:__ I believe that any newer debian image will work for the Beaglebone Black. 
+
 Flash the image to an SD card and install on the Beaglebone. Log in to the device
 
 Then, follow the prompts at
