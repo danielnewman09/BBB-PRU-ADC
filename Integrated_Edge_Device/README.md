@@ -5,7 +5,7 @@ The purpose of this is to document the development of an edge device which can a
 ## Preparing the Beaglebone
 
 
-### Install Tensorflow (Requires Python 3.5 right now)
+### Install Tensorflow (Requires Python 3.5)
 
 Before installing tensorflow, you need to install a couple of libraries.
 
