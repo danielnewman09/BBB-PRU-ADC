@@ -17,3 +17,10 @@ update-alternatives --install /usr/bin/python python /usr/local/bin/python3.7 10
 ```
 
 
+## Install Tensorflow
+
+```bash
+python3 -m pip install cython
+sudo apt-get update
+sudo apt-get install libhdf5-dev
+```
