@@ -32,16 +32,18 @@ wget -qO - http://beagle.tuks.nl/debian/pubring.gpg | sudo apt-key add -
 sudo apt-get update
 ```
 
-To install the python libraries:
+To install the python/C libraries:
 
 ```bash
 sudo apt-get install python-pruio libpruio-lkm libpruio-doc
+sudo apt-get install libpruio-dev libpruio-lkm libpruio-doc
 ```
 
-Copy the python example files to a desired directory by:
+Copy the python/C example files to a desired directory by:
 
 ```bash
 cp -r /usr/share/doc/python-pruio/examples .
+cp -r /usr/share/doc/libpruio-dev/examples .
 ```
 
 When you try to run a python file, you should get an error like:
