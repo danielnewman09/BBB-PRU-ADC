@@ -2,6 +2,7 @@
 My attempt at setting up and documenting the use of the Beaglebone Black PRU for reading an ADC
 
 __This tutorial has been tested on the following images:__
+
 https://debian.beagleboard.org/images/bone-debian-9.5-iot-armhf-2018-10-07-4gb.img.xz
 
 https://debian.beagleboard.org/images/bone-debian-9.9-lxqt-armhf-2019-08-03-4gb.img.xz
