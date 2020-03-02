@@ -17,9 +17,11 @@ import numpy as np
 from scipy import signal
 from scipy.stats import describe
 
+from tensorflow.keras.models import load_model
+from tensorflow.keras.metrics import mean_squared_error
 # import tensorflow as tf
 # import tensorflow.keras as keras
-# from Custom_Layers import Dropout_Live
+from Custom_Layers import Dropout_Live
 
 keras_model = None
 keras_path = None
@@ -131,7 +133,6 @@ def model_inference_full():
     modelId = request.json['modelId']
     feature = request.json['feature']
 
-
     model_path = basePath + 'Models/' + assetId + '/' + dataItemId + '/' + str(isWarmUp).lower() + '/' + str(spindleSpeed) + '/'
 
     if not os.path.exists(model_path):
@@ -143,7 +144,7 @@ def model_inference_full():
     if keras_path == model_path:
         new_model = keras_model
     else:
-        keras_model = tf.keras.models.load_model(model_path + "model_{}_{}_full.h5".format(modelId,feature),custom_objects={'Dropout_Live': Dropout_Live})
+        keras_model = load_model(model_path + "model_{}_{}_full.h5".format(modelId,feature),custom_objects={'Dropout_Live': Dropout_Live})
         new_model = keras_model
         keras_path = model_path
 
@@ -154,7 +155,7 @@ def model_inference_full():
 
     predict = new_model.predict(X_predict)
 
-    mse = keras.metrics.mean_squared_error(X_predict,predict)
+    mse = mean_squared_error(X_predict,predict)
     means = np.mean(mse,axis=1)
     means = np.mean(means)
 
