@@ -64,3 +64,11 @@ Type "help", "copyright", "credits" or "license" for more information.
 >>> 
 ```
 
+## Install Scipy
+
+```bash
+sudo apt-get update
+sudo apt-get install libatlas-base-dev
+```
+
+
