@@ -1,3 +1,4 @@
+
 /** \file rb_file.c
 \brief Example: fetch ADC samples in a ring buffer and save to file.
 
@@ -28,11 +29,13 @@ int main(int argc, char **argv)
   const uint32 tmr = (uint32) atoi(argv[2]);     //!< The sampling rate in ns (20000 -> 50 kHz).
   const uint32 NoStep = 1;      //!< The number of active steps (must match setStep calls and mask).
   const uint32 NoFile = 1;      //!< The number of files to write.
-  const char *NamFil = "output.%u"; //!< The output file names.
+  //const char *NamFil = "output.%u"; //!< The output file names.
+  const char *NamFil = "output.%u";
+
   struct timespec mSec;
 
-  printf("Number of Samples (%d)",tSamp);
-  printf("Sample Interval (ns) (%d)",tmr);
+  //printf("Number of Samples (%d)",tSamp);
+  //printf("Sample Interval (ns) (%d)",tmr);
 
   mSec.tv_nsec = 1000000;
   pruIo *io = pruio_new(PRUIO_DEF_ACTIVE, 0, 0, 0); //! create new driver
@@ -66,8 +69,8 @@ int main(int argc, char **argv)
     char fName[20];
     for(n = 0; n < NoFile; n++){
       sprintf(fName, NamFil, n);
-      printf("Creating file %s\n", fName);
-      FILE *oFile = fopen(fName, "wb");
+      //printf("Creating file %s\n", fName);
+      FILE *oFile = fopen(fName, "w");
       uint32 i = 0;               //!< Start index.
       while(i < tInd){
         i += half;
@@ -75,7 +78,7 @@ int main(int argc, char **argv)
           uint32 rest = tInd + half - i;
           uint32 iEnd = p1 >= p0 ? rest : rest + half;
           while(io->DRam[0] < iEnd) nanosleep(&mSec, NULL);
-          printf("  writing samples %u-%u\n", tInd -rest, tInd-1);
+          //printf("  writing samples %u-%u\n", tInd -rest, tInd-1);
           fwrite(p0, sizeof(uint16), rest, oFile);
           uint16 *swap = p0;
           p0 = p1;
@@ -84,14 +87,14 @@ int main(int argc, char **argv)
         }
         if(p1 > p0) while(io->DRam[0] < half) nanosleep(&mSec, NULL);
         else        while(io->DRam[0] > half) nanosleep(&mSec, NULL);
-        printf("  writing samples %u-%u\n", i-half, i-1);
-        fwrite(p0, sizeof(uint16), half, oFile);
+        //printf("  writing samples %u-%u\n", i-half, i-1);
+        fwrite(p0,  sizeof(uint16), half, oFile);
         uint16 *swap = p0;
         p0 = p1;
         p1 = swap;
       }
       fclose(oFile);
-      printf("Finished file %s\n", fName);
+      //printf("Finished file %s\n", fName);
     }
   } while(0);
   pruio_destroy(io);
