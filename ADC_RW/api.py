@@ -104,7 +104,7 @@ def parse_vibration():
     freqs,amps = signal.welch(data, fs=1 / samplingInterval, nperseg=fftPoints, scaling='spectrum')
 
     frequencyInterval = freqs[1] - freqs[0]
-    amps = lin_log_interp(amps)
+    # amps = lin_log_interp(amps)
 
     sampleRMS = np.sqrt(1 / data.shape[0] * np.sum((data - mean)**2))
 
