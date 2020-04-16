@@ -19,14 +19,36 @@ from scipy.stats import describe
 
 from tensorflow.keras.models import load_model
 from tensorflow.keras.metrics import mean_squared_error
+import tflite_runtime.interpreter as tflite
 # import tensorflow as tf
 # import tensorflow.keras as keras
-from Custom_Layers import Dropout_Live
+# from Custom_Layers import Dropout_Live
 
-keras_model = None
-keras_path = None
+from joblib import dump, load
+
+pca_gmm_model = None
+cnn_ae_model = None
+ae_model = None
+cnn_ae_lite_model = None
+
+pca_gnb_model = None
+mlp_model = None
+cnn_mlp_model = None
+cnn_mlp_lite_model = None
+
 
 cwd = os.path.dirname(os.path.abspath(__file__))
+
+DESKTOP = True
+PRELOAD_MODELS = False
+
+
+if desktop:
+    import tensorflow as tf
+    gpus= tf.config.experimental.list_physical_devices('GPU')
+    tf.config.experimental.set_memory_growth(gpus[0], True)
+
+if PRELOAD_MODELS
 
 @app.route('/features/capture/vibration',methods=['POST'])
 def capture_vibration():
@@ -118,67 +140,108 @@ def parse_vibration():
               'Variance':variance}
     return jsonify(output), 201
 
-@app.route('/models/inference/full',methods=['POST'])
+@app.route('/models/autoencoder/full',methods=['POST'])
 def model_inference_full():
 
-    global keras_model
-    global keras_path
-
-    assetId = request.json['assetId']
-    dataItemId = request.json['dataItemId']
-    isWarmUp = request.json['isWarmUp']
-    spindleSpeed = request.json['spindleSpeed']
-    xInference = np.array(request.json['xInference']).astype(float)
+    xInference = np.array(request.json['values']).astype(np.float32)
     basePath = request.json['basePath']
     modelId = request.json['modelId']
-    feature = request.json['feature']
 
-    model_path = basePath + 'Models/' + assetId + '/' + dataItemId + '/' + str(isWarmUp).lower() + '/' + str(spindleSpeed) + '/'
+    model_path = basePath + 'Models/Autoencoder/Full/'
 
     if not os.path.exists(model_path):
         return jsonify({'output':False}),201
 
-    with open(model_path + 'control_params_{}_{}_full.json'.format(modelId,feature), 'r') as fp:
-        param_dict = json.load(fp)
-
-    if keras_path == model_path:
-        new_model = keras_model
-    else:
-        keras_model = load_model(model_path + "model_{}_{}_full.h5".format(modelId,feature),custom_objects={'Dropout_Live': Dropout_Live})
-        new_model = keras_model
-        keras_path = model_path
+    model = load_model(model_path + "{}.h5".format(modelId))
 
     num_samples = 1
+    X_predict = np.atleast_2d(xInference)
 
-    xInference = xInference.reshape(1,512,1)
-    X_predict = np.repeat(xInference,num_samples,axis=0)
+    if 'cnn' in modelId.lower():
+        X_predict = X_predict[...,np.newaxis]
 
-    predict = new_model.predict(X_predict)
-
-    mse = mean_squared_error(X_predict,predict)
-    means = np.mean(mse,axis=1)
-    means = np.mean(means)
-
-    #means = np.mean(mse,axis=1).flatten()
-    variances = np.var(mse,axis=1).flatten()
-
-    #print(means)
-
-    #zMeans = means
-    zStds = variances
-    zMeans = (means - float(param_dict['avgMean'])) / float(param_dict['avgStd'])
-    #zStds = (variances - float(param_dict['varMean'])) / float(param_dict['varStd'])
+    predict = model.predict(X_predict)
+    mse = mean_squared_error(X_predict,predict).numpy().flatten()[0].astype(float)
 
     output = {
-        'valueMean':zMeans.tolist(),
-        'valueStd':zStds.tolist(),
-        'dataItemId':dataItemId,
-        'state':spindleSpeed,
-        'modelId':modelId,
-        'feature':feature
+        'values':mse,
     }
 
     return jsonify(output), 201
+
+
+@app.route('/models/autoencoder/lite',methods=['POST'])
+def model_inference_lite():
+
+
+    xInference = np.array(request.json['values']).astype(np.float32)
+    basePath = request.json['basePath']
+    modelId = request.json['modelId']
+
+    model_path = basePath + 'Models/Autoencoder/Lite/'
+
+    if not os.path.exists(model_path):
+        return jsonify({'output':False}),201
+
+    # Load TFLite model and allocate tensors.
+    interpreter = tflite.Interpreter(model_path=model_path + "{}.tflite".format(modelId))
+    interpreter.allocate_tensors()
+
+    # Get input and output tensors.
+    input_details = interpreter.get_input_details()
+    output_details = interpreter.get_output_details()
+
+    # Test model on random input data.
+    input_shape = input_details[0]['shape']
+    # input_data = np.array(np.random.random_sample(input_shape), dtype=np.float32)
+    input_data = xInference.reshape(input_shape).astype(np.float32)
+
+    num_samples = 1
+    all_outputs = np.zeros((num_samples,input_shape[1],input_shape[2]))
+
+    for i in range(num_samples):
+
+        interpreter.set_tensor(input_details[0]['index'], input_data)
+        interpreter.invoke()
+
+        # The function `get_tensor()` returns a copy of the tensor data.
+        # Use `tensor()` in order to get a pointer to the tensor.
+        output_data = interpreter.get_tensor(output_details[0]['index']).reshape(input_shape)
+
+        all_outputs[i,:,:] = output_data
+
+    input_data = np.repeat(input_data,num_samples,axis=0)
+
+    mse = mean_squared_error(all_outputs,input_data).numpy().flatten()[0].astype(float)
+
+    output = {
+        'values':mse,
+    }
+
+    return jsonify(output), 201
+
+
+@app.route('/models/gmm',methods=['POST'])
+def model_gmm():
+
+    xInference = np.array(request.json['values']).astype(np.float32)
+    basePath = request.json['basePath']
+    modelId = request.json['modelId']
+
+    model_path = basePath + 'Models/GMM/'
+
+    if not os.path.exists(model_path):
+        return jsonify({'output':False}),201
+    
+    model = load(model_path + "{}.joblib".format(modelId))
+
+    log_likelihood = model.score_samples(np.expand_dims(xInference,axis=0))
+
+    output = {
+        'values':log_likelihood.flatten()[0].astype(float)
+    }
+
+    return jsonify(output),201
 
 
 if __name__ == '__main__':
