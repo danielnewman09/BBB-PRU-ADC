@@ -36,8 +36,9 @@ if __name__ == '__main__':
 
     raw_file = open(cwd + '/output.0','rb')
     raw_data = raw_file.read()
-
+    os.remove(cwd + '/output.0')
     numpy_data = frombuffer(raw_data,dtype=uint16)
 
-    print({'Vibration':numpy_data.tolist()})
+    print('{"Vibration": '+ str(numpy_data.tolist()) + '}')
+
 
