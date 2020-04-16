@@ -1,0 +1,330 @@
+[
+    {
+        "id": "c50448c1.e725e8",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "68c1e3d7.824434",
+        "type": "file in",
+        "z": "c50448c1.e725e8",
+        "name": "Test",
+        "filename": "/home/dnewman/Documents/Github/Edge-Analytics-IoT-Framework/Dissertation-Notebooks/Chapter-4/data/Latency Tests/X_train_healthy.csv",
+        "format": "lines",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "x": 370,
+        "y": 260,
+        "wires": [
+            [
+                "ad42294f.1d9108"
+            ]
+        ]
+    },
+    {
+        "id": "8d287d24.6df2c",
+        "type": "inject",
+        "z": "c50448c1.e725e8",
+        "name": "",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 220,
+        "y": 260,
+        "wires": [
+            [
+                "68c1e3d7.824434"
+            ]
+        ]
+    },
+    {
+        "id": "ad42294f.1d9108",
+        "type": "delay",
+        "z": "c50448c1.e725e8",
+        "name": "",
+        "pauseType": "rate",
+        "timeout": "1",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "32",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "x": 540,
+        "y": 260,
+        "wires": [
+            [
+                "8c8d1ec3.74311"
+            ]
+        ]
+    },
+    {
+        "id": "8c8d1ec3.74311",
+        "type": "function",
+        "z": "c50448c1.e725e8",
+        "name": "",
+        "func": "var now = new Date();\n// var payload = {};\nvar statusText = \"\";\nvar allMessages = [];\n\nvar topic = \"Asset/\" + global.get(\"assetId\") + \"/Vibration\";\n\nvar modelIds = ['PCA-GMM','AE','CNN-AE','CNN-AE-Lite','PCA-GNB','MLP','CNN-MLP','CNN-MLP-Lite'];\n\nfor (i = 0; i < modelIds.length; i++) {\n    let thisMsg = {};\n    let payload = {};\n    payload[\"values\"] = JSON.parse('[' + msg.payload + ']');\n    payload[\"modelId\"] = modelIds[i];\n    payload[\"assetId\"] = global.get(\"assetId\");\n    \n    thisMsg.payload = payload;\n    thisMsg.topic = topic;\n    allMessages.push(thisMsg);\n}\n\n// // Build payload\n// payload[\"dateTime-Sent\"] = now.getTime();\n// payload[\"values\"] = JSON.parse('[' + msg.payload + ']');\n// payload[\"modelId\"] = global.get(\"modelId\");\n// payload[\"assetId\"] = global.get(\"assetId\");\n\n// Set message payload and topic.\n// msg.topic = topic;\n// msg.payload = payload;\n\nreturn [allMessages];",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 690,
+        "y": 260,
+        "wires": [
+            [
+                "dc36403d.f7b3e"
+            ]
+        ]
+    },
+    {
+        "id": "ef6a354c.1c38b8",
+        "type": "change",
+        "z": "c50448c1.e725e8",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "assetId",
+                "pt": "global",
+                "to": "Chapter4",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "basePath",
+                "pt": "global",
+                "to": "/home/dnewman/Documents/Github/Edge-Analytics-IoT-Framework/Dissertation-Notebooks/Chapter-4/data/Latency Tests/",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "MQTT",
+                "pt": "global",
+                "to": "Local",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "InferenceLocation",
+                "pt": "global",
+                "to": "Desktop",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "ModelStatus",
+                "pt": "global",
+                "to": "Unloaded",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 420,
+        "y": 200,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "4bdd6414.094efc",
+        "type": "inject",
+        "z": "c50448c1.e725e8",
+        "name": "",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "x": 230,
+        "y": 200,
+        "wires": [
+            [
+                "ef6a354c.1c38b8"
+            ]
+        ]
+    },
+    {
+        "id": "81f00294.077bc8",
+        "type": "mqtt out",
+        "z": "c50448c1.e725e8",
+        "name": "",
+        "topic": "",
+        "qos": "0",
+        "retain": "",
+        "broker": "9d1fb0c.003a1d",
+        "x": 1150,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "36b7bccc.b59c2c",
+        "type": "mqtt in",
+        "z": "c50448c1.e725e8",
+        "name": "",
+        "topic": "Asset/Chapter4/Inference",
+        "qos": "0",
+        "datatype": "auto",
+        "broker": "9d1fb0c.003a1d",
+        "x": 250,
+        "y": 320,
+        "wires": [
+            [
+                "2e8f24e2.f9fab4"
+            ]
+        ]
+    },
+    {
+        "id": "dc36403d.f7b3e",
+        "type": "delay",
+        "z": "c50448c1.e725e8",
+        "name": "",
+        "pauseType": "rate",
+        "timeout": "1",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "4",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "x": 840,
+        "y": 260,
+        "wires": [
+            [
+                "c5152e92.7e7ba"
+            ]
+        ]
+    },
+    {
+        "id": "43ef4872.0208d",
+        "type": "file",
+        "z": "c50448c1.e725e8",
+        "name": "Test",
+        "filename": "",
+        "appendNewline": true,
+        "createDir": false,
+        "overwriteFile": "false",
+        "encoding": "none",
+        "x": 890,
+        "y": 320,
+        "wires": [
+            [
+                "3dc1116f.dc6eb6"
+            ]
+        ]
+    },
+    {
+        "id": "f5b7f029.8feca",
+        "type": "function",
+        "z": "c50448c1.e725e8",
+        "name": "",
+        "func": "var now = new Date();\nvar payload = {};\n\nvar inferenceTime = msg.payload[\"dateTime-Inference-End\"] - msg.payload[\"dateTime-Inference-Start\"];\nvar roundTripTime = now.getTime() - msg.payload[\"dateTime-Sent\"];\nvar latencyTime = roundTripTime - inferenceTime;\n\npayload = inferenceTime + ',' + latencyTime + ',' + roundTripTime + ',' + msg.payload[\"values\"];\n\n\nmsg.payload = payload;\n\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 750,
+        "y": 320,
+        "wires": [
+            [
+                "43ef4872.0208d"
+            ]
+        ]
+    },
+    {
+        "id": "3dc1116f.dc6eb6",
+        "type": "debug",
+        "z": "c50448c1.e725e8",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "x": 1090,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "c5152e92.7e7ba",
+        "type": "function",
+        "z": "c50448c1.e725e8",
+        "name": "",
+        "func": "var now = new Date();\n\nmsg.payload[\"dateTime-Sent\"] = now.getTime();\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 990,
+        "y": 260,
+        "wires": [
+            [
+                "81f00294.077bc8"
+            ]
+        ]
+    },
+    {
+        "id": "2e8f24e2.f9fab4",
+        "type": "json",
+        "z": "c50448c1.e725e8",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 470,
+        "y": 320,
+        "wires": [
+            [
+                "e7ce91ec.422958"
+            ]
+        ]
+    },
+    {
+        "id": "e7ce91ec.422958",
+        "type": "function",
+        "z": "c50448c1.e725e8",
+        "name": "",
+        "func": "var filename = global.get(\"basePath\") + global.get(\"MQTT\") + '/' + global.get(\"InferenceLocation\") + '/' + msg.payload['modelId'] + '_' + global.get(\"ModelStatus\") + '.csv';\n\nmsg.filename = filename;\n\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 610,
+        "y": 320,
+        "wires": [
+            [
+                "f5b7f029.8feca"
+            ]
+        ]
+    },
+    {
+        "id": "9d1fb0c.003a1d",
+        "type": "mqtt-broker",
+        "z": "",
+        "name": "",
+        "broker": "69.222.133.95",
+        "port": "1883",
+        "clientid": "",
+        "usetls": false,
+        "compatmode": false,
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": ""
+    }
+]
