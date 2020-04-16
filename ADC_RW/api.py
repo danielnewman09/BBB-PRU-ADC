@@ -41,14 +41,25 @@ cwd = os.path.dirname(os.path.abspath(__file__))
 
 DESKTOP = True
 PRELOAD_MODELS = False
+basePath = '/home/dnewman/'
 
-
-if desktop:
+if DESKTOP == True:
     import tensorflow as tf
     gpus= tf.config.experimental.list_physical_devices('GPU')
     tf.config.experimental.set_memory_growth(gpus[0], True)
 
-if PRELOAD_MODELS
+if PRELOAD_MODELS == True:
+
+    pca_gmm_model = load(basePath + "Models/GMM/PCA-GMM.joblib")
+    cnn_ae_model = load_model(basePath + "Models/Autoencoder/Full/CNN-AE.h5")
+    ae_model = load_model(basePath + "Models/Autoencoder/Full/AE.h5")
+    cnn_ae_lite_model = tflite.Interpreter(model_path=basePath + "Models/Autoencoder/Lite/CNN-AE-Lite.tflite")
+
+    pca_gnb_model = load(basePath + "Models/GNB/PCA-GNB.joblib")
+    mlp_model = load_model(basePath + "Models/MLP-Classifier/Full/MLP.h5")
+    cnn_mlp_model = load_model(basePath + "Models/MLP-Classifier/Full/CNN-MLP.h5")
+    cnn_mlp_lite_model = tflite.Interpreter(model_path=basePath + "Models/MLP-Classifier/Lite/CNN-MLP-Lite.tflite")
+
 
 @app.route('/features/capture/vibration',methods=['POST'])
 def capture_vibration():
@@ -140,21 +151,65 @@ def parse_vibration():
               'Variance':variance}
     return jsonify(output), 201
 
+
+@app.route('/models/mlp-classifier/full',methods=['POST'])
+def classifier_inference_full():
+
+    xInference = np.array(request.json['values']).astype(np.float32)
+    modelId = request.json['modelId']
+
+    if PRELOAD_MODELS:
+
+        if 'cnn' in modelId.lower():
+            global cnn_mlp_model
+            model = cnn_mlp_model
+        else:
+            global mlp_model
+            model = mlp_model
+    else:
+
+        global basePath
+        if 'cnn' in modelId.lower():
+            model = load_model(basePath + "Models/MLP-Classifier/Full/CNN-MLP.h5")
+        else:
+            model = load_model(basePath + "Models/MLP-Classifier/Full/MLP.h5")
+
+    X_predict = np.atleast_2d(xInference)
+
+    if 'cnn' in modelId.lower():
+        X_predict = X_predict[...,np.newaxis]
+
+    predict = model.predict(X_predict)
+    classification = predict[0,0].astype(float)
+
+    output = {
+        'values':classification,
+    }
+
+    return jsonify(output), 201
+
 @app.route('/models/autoencoder/full',methods=['POST'])
 def model_inference_full():
 
     xInference = np.array(request.json['values']).astype(np.float32)
-    basePath = request.json['basePath']
     modelId = request.json['modelId']
 
-    model_path = basePath + 'Models/Autoencoder/Full/'
+    if PRELOAD_MODELS == True:
 
-    if not os.path.exists(model_path):
-        return jsonify({'output':False}),201
+        if 'cnn' in modelId.lower():
+            global cnn_ae_model
+            model = cnn_ae_model
+        else:
+            global ae_model
+            model = ae_model
+    else:
 
-    model = load_model(model_path + "{}.h5".format(modelId))
+        global basePath
+        if 'cnn' in modelId.lower():
+            model = load_model(basePath + "Models/Autoencoder/Full/CNN-AE.h5")
+        else:
+            model = load_model(basePath + "Models/Autoencoder/Full/AE.h5")
 
-    num_samples = 1
     X_predict = np.atleast_2d(xInference)
 
     if 'cnn' in modelId.lower():
@@ -173,18 +228,15 @@ def model_inference_full():
 @app.route('/models/autoencoder/lite',methods=['POST'])
 def model_inference_lite():
 
-
     xInference = np.array(request.json['values']).astype(np.float32)
-    basePath = request.json['basePath']
     modelId = request.json['modelId']
 
-    model_path = basePath + 'Models/Autoencoder/Lite/'
+    if PRELOAD_MODELS == True:
+        global cnn_ae_lite_model
+        interpreter = cnn_ae_lite_model
+    else:
+        interpreter = tflite.Interpreter(model_path=basePath + "Models/Autoencoder/Lite/CNN-AE-Lite.tflite")
 
-    if not os.path.exists(model_path):
-        return jsonify({'output':False}),201
-
-    # Load TFLite model and allocate tensors.
-    interpreter = tflite.Interpreter(model_path=model_path + "{}.tflite".format(modelId))
     interpreter.allocate_tensors()
 
     # Get input and output tensors.
@@ -208,7 +260,7 @@ def model_inference_lite():
         # Use `tensor()` in order to get a pointer to the tensor.
         output_data = interpreter.get_tensor(output_details[0]['index']).reshape(input_shape)
 
-        all_outputs[i,:,:] = output_data
+        all_outputs[i,...] = output_data
 
     input_data = np.repeat(input_data,num_samples,axis=0)
 
@@ -221,24 +273,91 @@ def model_inference_lite():
     return jsonify(output), 201
 
 
+@app.route('/models/mlp-classifier/lite',methods=['POST'])
+def classifier_inference_lite():
+
+    xInference = np.atleast_2d(np.array(request.json['values']).astype(np.float32))
+    modelId = request.json['modelId']
+
+    if PRELOAD_MODELS:
+        global cnn_mlp_lite_model
+        interpreter = cnn_mlp_lite_model
+    else:
+        global basePath
+        interpreter = tflite.Interpreter(model_path=basePath + "Models/MLP-Classifier/Lite/CNN-MLP-Lite.tflite")
+
+    interpreter.allocate_tensors()
+
+    # Get input and output tensors.
+    input_details = interpreter.get_input_details()
+    output_details = interpreter.get_output_details()
+    
+    # Test model on random input data.
+    input_shape = input_details[0]['shape']
+    # input_data = np.array(np.random.random_sample(input_shape), dtype=np.float32)
+    input_data = xInference[:,np.newaxis,:,np.newaxis].astype(np.float32)
+
+    output_shape = output_details[0]['shape']
+    num_samples = 1
+    all_outputs = np.zeros((num_samples,output_shape[1]))
+
+    for i in range(num_samples):
+
+        interpreter.set_tensor(input_details[0]['index'], input_data[i,...])
+        interpreter.invoke()
+
+        # The function `get_tensor()` returns a copy of the tensor data.
+        # Use `tensor()` in order to get a pointer to the tensor.
+        output_data = interpreter.get_tensor(output_details[0]['index']).flatten()
+
+        all_outputs[i,:] = output_data
+    
+    classification = all_outputs[0,0]
+
+    output = {
+        'values':classification,
+    }
+
+    return jsonify(output), 201
+
 @app.route('/models/gmm',methods=['POST'])
 def model_gmm():
 
     xInference = np.array(request.json['values']).astype(np.float32)
-    basePath = request.json['basePath']
     modelId = request.json['modelId']
 
-    model_path = basePath + 'Models/GMM/'
-
-    if not os.path.exists(model_path):
-        return jsonify({'output':False}),201
-    
-    model = load(model_path + "{}.joblib".format(modelId))
+    if PRELOAD_MODELS:
+        global pca_gmm_model
+        model = pca_gmm_model
+    else:
+        global basePath
+        model = load(basePath + "Models/GMM/PCA-GMM.joblib")
 
     log_likelihood = model.score_samples(np.expand_dims(xInference,axis=0))
 
     output = {
         'values':log_likelihood.flatten()[0].astype(float)
+    }
+
+    return jsonify(output),201
+
+@app.route('/models/gnb',methods=['POST'])
+def model_gnb():
+
+    xInference = np.atleast_2d(np.array(request.json['values']).astype(np.float32))
+    modelId = request.json['modelId']
+
+    if PRELOAD_MODELS:
+        global pca_gnb_model
+        model = pca_gnb_model
+    else:
+        global basePath
+        model = load(basePath + "Models/GNB/PCA-GNB.joblib")
+
+    classification = model.predict_proba(xInference).flatten()[0]
+
+    output = {
+        'values':classification
     }
 
     return jsonify(output),201
