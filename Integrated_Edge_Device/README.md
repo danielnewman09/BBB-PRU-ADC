@@ -66,9 +66,24 @@ Type "help", "copyright", "credits" or "license" for more information.
 
 ## Install Scipy
 
+Installing scipy will take a long time (several hours)
+
 ```bash
 sudo apt-get update
 sudo apt-get install libatlas-base-dev
+python3 -m pip install scipy
+```
+
+## Install Scikit-Learn
+
+It's also difficult to install scikit-learn on a beaglebone device. To properly install the most recent releases, it is necessary to first install the dependencies (numpy, scipy, etc.) and then install the library without trying to install the dependencies. 
+
+Installing Scikit-Learn will also take several hours.
+
+
+```bash
+python3 -m pip install joblib
+python3 -m pip install -U scikit-learn --no-deps
 ```
 
 
