@@ -19,8 +19,8 @@ from scipy.stats import describe
 
 from tensorflow.keras.models import load_model
 from tensorflow.keras.metrics import mean_squared_error
-import tflite_runtime.interpreter as tflite
-# import tensorflow as tf
+#import tflite_runtime.interpreter as tflite
+import tensorflow as tf
 # import tensorflow.keras as keras
 # from Custom_Layers import Dropout_Live
 
@@ -41,23 +41,19 @@ cwd = os.path.dirname(os.path.abspath(__file__))
 
 DESKTOP = True
 PRELOAD_MODELS = False
-basePath = '/home/dnewman/'
+basePath = '/home/debian/'
 
-if DESKTOP == True:
-    import tensorflow as tf
-    gpus= tf.config.experimental.list_physical_devices('GPU')
-    tf.config.experimental.set_memory_growth(gpus[0], True)
 
 if PRELOAD_MODELS == True:
 
     pca_gmm_model = load(basePath + "Models/GMM/PCA-GMM.joblib")
-    cnn_ae_model = load_model(basePath + "Models/Autoencoder/Full/CNN-AE.h5")
-    ae_model = load_model(basePath + "Models/Autoencoder/Full/AE.h5")
+    #cnn_ae_model = load_model(basePath + "Models/Autoencoder/Full/CNN-AE.h5")
+    #ae_model = load_model(basePath + "Models/Autoencoder/Full/AE.h5")
     cnn_ae_lite_model = tflite.Interpreter(model_path=basePath + "Models/Autoencoder/Lite/CNN-AE-Lite.tflite")
 
     pca_gnb_model = load(basePath + "Models/GNB/PCA-GNB.joblib")
-    mlp_model = load_model(basePath + "Models/MLP-Classifier/Full/MLP.h5")
-    cnn_mlp_model = load_model(basePath + "Models/MLP-Classifier/Full/CNN-MLP.h5")
+    #mlp_model = load_model(basePath + "Models/MLP-Classifier/Full/MLP.h5")
+    #cnn_mlp_model = load_model(basePath + "Models/MLP-Classifier/Full/CNN-MLP.h5")
     cnn_mlp_lite_model = tflite.Interpreter(model_path=basePath + "Models/MLP-Classifier/Lite/CNN-MLP-Lite.tflite")
 
 
@@ -151,80 +147,6 @@ def parse_vibration():
               'Variance':variance}
     return jsonify(output), 201
 
-
-@app.route('/models/mlp-classifier/full',methods=['POST'])
-def classifier_inference_full():
-
-    xInference = np.array(request.json['values']).astype(np.float32)
-    modelId = request.json['modelId']
-
-    if PRELOAD_MODELS:
-
-        if 'cnn' in modelId.lower():
-            global cnn_mlp_model
-            model = cnn_mlp_model
-        else:
-            global mlp_model
-            model = mlp_model
-    else:
-
-        global basePath
-        if 'cnn' in modelId.lower():
-            model = load_model(basePath + "Models/MLP-Classifier/Full/CNN-MLP.h5")
-        else:
-            model = load_model(basePath + "Models/MLP-Classifier/Full/MLP.h5")
-
-    X_predict = np.atleast_2d(xInference)
-
-    if 'cnn' in modelId.lower():
-        X_predict = X_predict[...,np.newaxis]
-
-    predict = model.predict(X_predict)
-    classification = predict[0,0].astype(float)
-
-    output = {
-        'values':classification,
-    }
-
-    return jsonify(output), 201
-
-@app.route('/models/autoencoder/full',methods=['POST'])
-def model_inference_full():
-
-    xInference = np.array(request.json['values']).astype(np.float32)
-    modelId = request.json['modelId']
-
-    if PRELOAD_MODELS == True:
-
-        if 'cnn' in modelId.lower():
-            global cnn_ae_model
-            model = cnn_ae_model
-        else:
-            global ae_model
-            model = ae_model
-    else:
-
-        global basePath
-        if 'cnn' in modelId.lower():
-            model = load_model(basePath + "Models/Autoencoder/Full/CNN-AE.h5")
-        else:
-            model = load_model(basePath + "Models/Autoencoder/Full/AE.h5")
-
-    X_predict = np.atleast_2d(xInference)
-
-    if 'cnn' in modelId.lower():
-        X_predict = X_predict[...,np.newaxis]
-
-    predict = model.predict(X_predict)
-    mse = mean_squared_error(X_predict,predict).numpy().flatten()[0].astype(float)
-
-    output = {
-        'values':mse,
-    }
-
-    return jsonify(output), 201
-
-
 @app.route('/models/autoencoder/lite',methods=['POST'])
 def model_inference_lite():
 
@@ -249,22 +171,17 @@ def model_inference_lite():
     input_data = xInference.reshape(input_shape).astype(np.float32)
 
     num_samples = 1
-    all_outputs = np.zeros((num_samples,input_shape[1],input_shape[2]))
 
-    for i in range(num_samples):
+    interpreter.set_tensor(input_details[0]['index'], input_data)
+    interpreter.invoke()
 
-        interpreter.set_tensor(input_details[0]['index'], input_data)
-        interpreter.invoke()
-
-        # The function `get_tensor()` returns a copy of the tensor data.
-        # Use `tensor()` in order to get a pointer to the tensor.
-        output_data = interpreter.get_tensor(output_details[0]['index']).reshape(input_shape)
-
-        all_outputs[i,...] = output_data
+    # The function `get_tensor()` returns a copy of the tensor data.
+    # Use `tensor()` in order to get a pointer to the tensor.
+    output_data = interpreter.get_tensor(output_details[0]['index']).reshape(input_shape)
 
     input_data = np.repeat(input_data,num_samples,axis=0)
 
-    mse = mean_squared_error(all_outputs,input_data).numpy().flatten()[0].astype(float)
+    mse = mean_squared_error(output_data,input_data).numpy().flatten()[0].astype(float)
 
     output = {
         'values':mse,
@@ -295,24 +212,18 @@ def classifier_inference_lite():
     # Test model on random input data.
     input_shape = input_details[0]['shape']
     # input_data = np.array(np.random.random_sample(input_shape), dtype=np.float32)
-    input_data = xInference[:,np.newaxis,:,np.newaxis].astype(np.float32)
-
+    input_data = xInference.reshape(input_shape).astype(np.float32)
     output_shape = output_details[0]['shape']
-    num_samples = 1
-    all_outputs = np.zeros((num_samples,output_shape[1]))
 
-    for i in range(num_samples):
 
-        interpreter.set_tensor(input_details[0]['index'], input_data[i,...])
-        interpreter.invoke()
+    interpreter.set_tensor(input_details[0]['index'], input_data)
+    interpreter.invoke()
 
-        # The function `get_tensor()` returns a copy of the tensor data.
-        # Use `tensor()` in order to get a pointer to the tensor.
-        output_data = interpreter.get_tensor(output_details[0]['index']).flatten()
-
-        all_outputs[i,:] = output_data
+    # The function `get_tensor()` returns a copy of the tensor data.
+    # Use `tensor()` in order to get a pointer to the tensor.
+    output_data = interpreter.get_tensor(output_details[0]['index']).flatten()
     
-    classification = all_outputs[0,0]
+    classification = output_data[0].astype(float)
 
     output = {
         'values':classification,
