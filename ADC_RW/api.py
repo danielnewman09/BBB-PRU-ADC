@@ -39,9 +39,9 @@ cnn_mlp_lite_model = None
 
 cwd = os.path.dirname(os.path.abspath(__file__))
 
-DESKTOP = True
-PRELOAD_MODELS = False
-basePath = '/home/debian/'
+
+PRELOAD_MODELS = True
+basePath = '/home/debian/Git/Edge-Analytics-IoT-Framework/'
 
 
 if PRELOAD_MODELS == True:
@@ -49,12 +49,12 @@ if PRELOAD_MODELS == True:
     pca_gmm_model = load(basePath + "Models/GMM/PCA-GMM.joblib")
     #cnn_ae_model = load_model(basePath + "Models/Autoencoder/Full/CNN-AE.h5")
     #ae_model = load_model(basePath + "Models/Autoencoder/Full/AE.h5")
-    cnn_ae_lite_model = tflite.Interpreter(model_path=basePath + "Models/Autoencoder/Lite/CNN-AE-Lite.tflite")
+    cnn_ae_lite_model = tf.lite.Interpreter(model_path=basePath + "Models/Autoencoder/Lite/CNN-AE-Lite.tflite")
 
     pca_gnb_model = load(basePath + "Models/GNB/PCA-GNB.joblib")
     #mlp_model = load_model(basePath + "Models/MLP-Classifier/Full/MLP.h5")
     #cnn_mlp_model = load_model(basePath + "Models/MLP-Classifier/Full/CNN-MLP.h5")
-    cnn_mlp_lite_model = tflite.Interpreter(model_path=basePath + "Models/MLP-Classifier/Lite/CNN-MLP-Lite.tflite")
+    cnn_mlp_lite_model = tf.lite.Interpreter(model_path=basePath + "Models/MLP-Classifier/Lite/CNN-MLP-Lite.tflite")
 
 
 @app.route('/features/capture/vibration',methods=['POST'])
