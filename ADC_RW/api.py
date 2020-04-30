@@ -122,9 +122,21 @@ def parse_data(data,fftPoints,samplingInterval):
 
 @app.route('/features/parse/vibration',methods=['POST'])
 def parse_vibration():
-    data = np.array(request.json['values']).astype(float)
+
+    f = open('/usr/local/lib/node_modules/node-red/output.0','rb')
+
+    raw_data = f.read()
+
+    data = np.frombuffer(raw_data,dtype=np.uint16).astype(float)
+    #data = np.atleast_2d(numpy_data)
+
+    #data = np.array(request.json['values']).astype(float)
     fftPoints = request.json['fftPoints']
     samplingInterval = request.json['samplingInterval']
+    scalingCoeff = request.json['accelerationCoeff1']
+    offsetCoeff = request.json['accelerationCoeff0']
+
+    data = (scalingCoeff * data) + offsetCoeff
 
     _,minmax,mean,variance,skewness,kurtosis = describe(data)
 
@@ -151,7 +163,7 @@ def parse_vibration():
 def model_inference_lite():
 
     xInference = np.array(request.json['values']).astype(np.float32)
-    modelId = request.json['modelId']
+#    modelId = request.json['modelId']
 
     if PRELOAD_MODELS == True:
         global cnn_ae_lite_model
@@ -235,7 +247,7 @@ def classifier_inference_lite():
 def model_gmm():
 
     xInference = np.array(request.json['values']).astype(np.float32)
-    modelId = request.json['modelId']
+#    modelId = request.json['modelId']
 
     if PRELOAD_MODELS:
         global pca_gmm_model
