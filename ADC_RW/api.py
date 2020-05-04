@@ -41,8 +41,8 @@ cwd = os.path.dirname(os.path.abspath(__file__))
 
 
 PRELOAD_MODELS = True
-# basePath = '/home/debian/Git/Edge-Analytics-IoT-Framework/'
-basePath = '/home/dnewman/Documents/Github/Edge-Analytics-IoT-Framework/'
+basePath = '/home/debian/Git/Edge-Analytics-IoT-Framework/'
+#basePath = '/home/dnewman/Documents/Github/Edge-Analytics-IoT-Framework/'
 
 
 if PRELOAD_MODELS == True:
@@ -113,13 +113,13 @@ def parse_vibration_route():
 
     return jsonify(output), 201
 
-@app.route('/features/parse/rawvib')
+@app.route('/features/parse/rawvib',methods=['POST'])
 def parse_raw_vibration_route():
     f = open('/usr/local/lib/node_modules/node-red/output.0','rb')
     raw_data = f.read()
     data = np.frombuffer(raw_data,dtype=np.uint16).astype(float)
-    output = {'values':data}
-    return jsonify(output),201
+    output = {'values':data.tolist()}
+    return jsonify(output), 201
     
 
 def parse_vibration(fftPoints,samplingInterval,scalingCoeff,offsetCoeff):
