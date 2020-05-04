@@ -120,6 +120,26 @@ def parse_data(data,fftPoints,samplingInterval):
 
     return jsonify(output)
 
+@app.route('/features/parse/rms',methods=['POST'])
+def parse_rms():
+
+    f = open('/usr/local/lib/node_modules/node-red/output.0','rb')
+
+    raw_data = f.read()
+
+    data = np.frombuffer(raw_data,dtype=np.uint16).astype(float)
+    scalingCoeff = request.json['accelerationCoeff1']
+    offsetCoeff = request.json['accelerationCoeff0']
+
+    data = (scalingCoeff * data) + offsetCoeff
+
+    mean = np.mean(data)
+
+    sampleRMS = np.sqrt(1 / data.shape[0] * np.sum((data - mean)**2))
+
+    output = {'RMS':sampleRMS}
+    return jsonify(output), 201
+
 @app.route('/features/parse/vibration',methods=['POST'])
 def parse_vibration():
 
