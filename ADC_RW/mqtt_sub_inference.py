@@ -15,6 +15,9 @@ def on_message(client, userdata, message):
 
    modelId = msg_json['modelId']
    xInference = np.array(msg_json['values']).astype(np.float32)
+   xInference = xInference[:1024]
+
+   dateTimeSent = msg_json['dateTime-Sent']
 
    print(modelId)
    print(xInference.shape)
@@ -28,13 +31,14 @@ def on_message(client, userdata, message):
    elif modelId == 'CNN-MLP-Lite':
       returnval = classifier_inference_lite(xInference)
 
-   print(returnval)
+   return_str = '{"modelId": "' + modelId + '" ,"dateTime-Sent":' + str(dateTimeSent) + '}'
 
+   client.publish("Asset/Chapter4/Inference/Amazon-EC2",return_str,qos=0, retain=False)
 client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
 client.connect(broker_url, broker_port)
 
-client.subscribe("Asset/Chapter4/Vibration/Amazon-EC2", qos=1)
+client.subscribe("Asset/Chapter4/Vibration/Amazon-EC2", qos=0)
 
 client.loop_forever()
