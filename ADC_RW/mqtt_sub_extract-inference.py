@@ -15,6 +15,11 @@ def on_message(client, userdata, message):
 
    modelId = msg_json['modelId']
    xInference = np.array(msg_json['values']).astype(np.float32)
+   fftPoints = msg_json['fftPoints']
+   samplingInterval = msg_json['samplingInterval']
+   scalingCoeff = msg_json['accelerationCoeff1']
+   offsetCoeff = msg_json['accelerationCoeff0']
+   xInference = parse_vibration(fftPoints,samplingInterval,scalingCoeff,offsetCoeff)['fftAmps']
    xInference = xInference[:1024]
 
    dateTimeSent = msg_json['dateTime-Sent']
