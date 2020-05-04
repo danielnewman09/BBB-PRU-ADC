@@ -44,7 +44,6 @@ PRELOAD_MODELS = True
 basePath = '/home/daniel/Git/Edge-Analytics-IoT-Framework/'
 #basePath = '/home/dnewman/Documents/Github/Edge-Analytics-IoT-Framework/'
 
-
 if PRELOAD_MODELS == True:
 
     pca_gmm_model = load(basePath + "Models/GMM/PCA-GMM.joblib")
