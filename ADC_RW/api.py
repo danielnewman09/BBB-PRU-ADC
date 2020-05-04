@@ -41,7 +41,8 @@ cwd = os.path.dirname(os.path.abspath(__file__))
 
 
 PRELOAD_MODELS = True
-basePath = '/home/debian/Git/Edge-Analytics-IoT-Framework/'
+# basePath = '/home/debian/Git/Edge-Analytics-IoT-Framework/'
+basePath = '/home/dnewman/Documents/Github/Edge-Analytics-IoT-Framework/'
 
 
 if PRELOAD_MODELS == True:
@@ -57,25 +58,6 @@ if PRELOAD_MODELS == True:
     cnn_mlp_lite_model = tf.lite.Interpreter(model_path=basePath + "Models/MLP-Classifier/Lite/CNN-MLP-Lite.tflite")
 
 
-@app.route('/features/capture/vibration',methods=['POST'])
-def capture_vibration():
-    samplePoints = request.json['samplePoints']
-    samplingInterval = float(request.json['samplingInterval'])
-    fftPoints = request.json['fftPoints']
-
-    samplingIntervalNS = int(samplingInterval * 1e9)
-
-    call(['./rb_file',str(samplePoints),str(samplingIntervalNS)])
-
-    raw_file = open(cwd + '/output.0','rb')
-    raw_data = raw_file.read()
-    numpy_data = np.frombuffer(raw_data,dtype=np.uint16)
-    numpy_data = np.atleast_2d(numpy_data)
-
-    np.savetxt(cwd + '/output.0.txt',numpy_data,delimiter=',')
-
-    return parse_data(numpy_data.flatten(),fftPoints,samplingInterval),201
-    # return jsonify({'Vibration':numpy_data.flatten().tolist()}),201
 
 @app.route('/models/save',methods=['POST'])
 def save_model():
@@ -93,34 +75,13 @@ def save_model():
 
     return jsonify({'Output':True}),201
 
-def parse_data(data,fftPoints,samplingInterval):
-
-    _,minmax,mean,variance,skewness,kurtosis = describe(data)
-
-    minimum = minmax[0]
-    maximum = minmax[1]
-
-    freqs,amps = signal.welch(data, fs=1 / samplingInterval, nperseg=fftPoints, scaling='spectrum')
-
-    frequencyInterval = freqs[1] - freqs[0]
-
-    sampleRMS = np.sqrt(1 / data.shape[0] * np.sum((data - mean)**2))
-
-    output = {'frequencyInterval':frequencyInterval,
-              'fftAmps':amps.tolist(),
-              'fftFreq':freqs.tolist(),
-              'Vibration':data.tolist(),
-              'RMS':float(sampleRMS),
-              'Kurtosis':float(kurtosis),
-              'Mean':float(mean),
-              'Skewness':float(skewness),
-              'Variance':float(variance),
-              'Minimum':float(minimum),
-              'Maximum':float(maximum)}
-
-    return jsonify(output)
 
 @app.route('/features/parse/rms',methods=['POST'])
+def parse_rms_route():
+
+    output = {'RMS':parse_rms()}
+    return jsonify(output), 201
+
 def parse_rms():
 
     f = open('/usr/local/lib/node_modules/node-red/output.0','rb')
@@ -137,24 +98,37 @@ def parse_rms():
 
     sampleRMS = np.sqrt(1 / data.shape[0] * np.sum((data - mean)**2))
 
-    output = {'RMS':sampleRMS}
-    return jsonify(output), 201
+    return sampleRMS
+
 
 @app.route('/features/parse/vibration',methods=['POST'])
-def parse_vibration():
+def parse_vibration_route():
+
+    fftPoints = request.json['fftPoints']
+    samplingInterval = request.json['samplingInterval']
+    scalingCoeff = request.json['accelerationCoeff1']
+    offsetCoeff = request.json['accelerationCoeff0']
+
+    output = parse_vibration(fftPoints,samplingInterval,scalingCoeff,offsetCoeff)
+
+    return jsonify(output), 201
+
+@app.route('/features/parse/rawvib')
+def parse_raw_vibration_route():
+    f = open('/usr/local/lib/node_modules/node-red/output.0','rb')
+    raw_data = f.read()
+    data = np.frombuffer(raw_data,dtype=np.uint16).astype(float)
+    output = {'values':data}
+    return jsonify(output),201
+    
+
+def parse_vibration(fftPoints,samplingInterval,scalingCoeff,offsetCoeff):
 
     f = open('/usr/local/lib/node_modules/node-red/output.0','rb')
 
     raw_data = f.read()
 
     data = np.frombuffer(raw_data,dtype=np.uint16).astype(float)
-    #data = np.atleast_2d(numpy_data)
-
-    #data = np.array(request.json['values']).astype(float)
-    fftPoints = request.json['fftPoints']
-    samplingInterval = request.json['samplingInterval']
-    scalingCoeff = request.json['accelerationCoeff1']
-    offsetCoeff = request.json['accelerationCoeff0']
 
     data = (scalingCoeff * data) + offsetCoeff
 
@@ -177,14 +151,21 @@ def parse_vibration():
               'Mean':mean,
               'Skewness':skewness,
               'Variance':variance}
-    return jsonify(output), 201
+
+    return output
 
 @app.route('/models/autoencoder/lite',methods=['POST'])
-def model_inference_lite():
+def model_inference_lite_route():
 
     xInference = np.array(request.json['values']).astype(np.float32)
-#    modelId = request.json['modelId']
 
+    output = {
+        'values':model_inference_lite(xInference),
+    }
+
+    return jsonify(output), 201
+
+def model_inference_lite(xInference):
     if PRELOAD_MODELS == True:
         global cnn_ae_lite_model
         interpreter = cnn_ae_lite_model
@@ -215,18 +196,24 @@ def model_inference_lite():
 
     mse = mean_squared_error(output_data,input_data).numpy().flatten()[0].astype(float)
 
+    return mse
+
+
+@app.route('/models/mlp-classifier/lite',methods=['POST'])
+def classifier_inference_lite_route():
+
+    xInference = np.atleast_2d(np.array(request.json['values']).astype(np.float32))
+    modelId = request.json['modelId']
+
     output = {
-        'values':mse,
+        'values':classifier_inference_lite(xInference),
     }
 
     return jsonify(output), 201
 
+def classifier_inference_lite(xInference):
 
-@app.route('/models/mlp-classifier/lite',methods=['POST'])
-def classifier_inference_lite():
-
-    xInference = np.atleast_2d(np.array(request.json['values']).astype(np.float32))
-    modelId = request.json['modelId']
+    xInference = np.atleast_2d(xInference)
 
     if PRELOAD_MODELS:
         global cnn_mlp_lite_model
@@ -257,17 +244,21 @@ def classifier_inference_lite():
     
     classification = output_data[0].astype(float)
 
-    output = {
-        'values':classification,
-    }
+    return classification
 
-    return jsonify(output), 201
 
 @app.route('/models/gmm',methods=['POST'])
-def model_gmm():
+def model_gmm_route():
 
     xInference = np.array(request.json['values']).astype(np.float32)
-#    modelId = request.json['modelId']
+
+    output = {
+        'values':model_gmm(xInference)
+    }
+
+    return jsonify(output),201
+
+def model_gmm(xInference):
 
     if PRELOAD_MODELS:
         global pca_gmm_model
@@ -278,17 +269,22 @@ def model_gmm():
 
     log_likelihood = model.score_samples(np.expand_dims(xInference,axis=0))
 
+    return log_likelihood.flatten()[0].astype(float)
+
+
+@app.route('/models/gnb',methods=['POST'])
+def model_gnb_route():
+
+    xInference = np.atleast_2d(np.array(request.json['values']).astype(np.float32))
+    modelId = request.json['modelId']
+
     output = {
-        'values':log_likelihood.flatten()[0].astype(float)
+        'values':model_gnb(xInference)
     }
 
     return jsonify(output),201
 
-@app.route('/models/gnb',methods=['POST'])
-def model_gnb():
-
-    xInference = np.atleast_2d(np.array(request.json['values']).astype(np.float32))
-    modelId = request.json['modelId']
+def model_gnb(xInference):
 
     if PRELOAD_MODELS:
         global pca_gnb_model
@@ -299,11 +295,7 @@ def model_gnb():
 
     classification = model.predict_proba(xInference).flatten()[0]
 
-    output = {
-        'values':classification
-    }
-
-    return jsonify(output),201
+    return classification
 
 
 if __name__ == '__main__':
