@@ -39,9 +39,9 @@ cnn_mlp_lite_model = None
 
 cwd = os.path.dirname(os.path.abspath(__file__))
 
-DESKTOP = True
-PRELOAD_MODELS = False
-basePath = '/home/debian/'
+
+PRELOAD_MODELS = True
+basePath = '/home/debian/Git/Edge-Analytics-IoT-Framework/'
 
 
 if PRELOAD_MODELS == True:
@@ -49,12 +49,12 @@ if PRELOAD_MODELS == True:
     pca_gmm_model = load(basePath + "Models/GMM/PCA-GMM.joblib")
     #cnn_ae_model = load_model(basePath + "Models/Autoencoder/Full/CNN-AE.h5")
     #ae_model = load_model(basePath + "Models/Autoencoder/Full/AE.h5")
-    cnn_ae_lite_model = tflite.Interpreter(model_path=basePath + "Models/Autoencoder/Lite/CNN-AE-Lite.tflite")
+    cnn_ae_lite_model = tf.lite.Interpreter(model_path=basePath + "Models/Autoencoder/Lite/CNN-AE-Lite.tflite")
 
     pca_gnb_model = load(basePath + "Models/GNB/PCA-GNB.joblib")
     #mlp_model = load_model(basePath + "Models/MLP-Classifier/Full/MLP.h5")
     #cnn_mlp_model = load_model(basePath + "Models/MLP-Classifier/Full/CNN-MLP.h5")
-    cnn_mlp_lite_model = tflite.Interpreter(model_path=basePath + "Models/MLP-Classifier/Lite/CNN-MLP-Lite.tflite")
+    cnn_mlp_lite_model = tf.lite.Interpreter(model_path=basePath + "Models/MLP-Classifier/Lite/CNN-MLP-Lite.tflite")
 
 
 @app.route('/features/capture/vibration',methods=['POST'])
@@ -120,11 +120,43 @@ def parse_data(data,fftPoints,samplingInterval):
 
     return jsonify(output)
 
+@app.route('/features/parse/rms',methods=['POST'])
+def parse_rms():
+
+    f = open('/usr/local/lib/node_modules/node-red/output.0','rb')
+
+    raw_data = f.read()
+
+    data = np.frombuffer(raw_data,dtype=np.uint16).astype(float)
+    scalingCoeff = request.json['accelerationCoeff1']
+    offsetCoeff = request.json['accelerationCoeff0']
+
+    data = (scalingCoeff * data) + offsetCoeff
+
+    mean = np.mean(data)
+
+    sampleRMS = np.sqrt(1 / data.shape[0] * np.sum((data - mean)**2))
+
+    output = {'RMS':sampleRMS}
+    return jsonify(output), 201
+
 @app.route('/features/parse/vibration',methods=['POST'])
 def parse_vibration():
-    data = np.array(request.json['values']).astype(float)
+
+    f = open('/usr/local/lib/node_modules/node-red/output.0','rb')
+
+    raw_data = f.read()
+
+    data = np.frombuffer(raw_data,dtype=np.uint16).astype(float)
+    #data = np.atleast_2d(numpy_data)
+
+    #data = np.array(request.json['values']).astype(float)
     fftPoints = request.json['fftPoints']
     samplingInterval = request.json['samplingInterval']
+    scalingCoeff = request.json['accelerationCoeff1']
+    offsetCoeff = request.json['accelerationCoeff0']
+
+    data = (scalingCoeff * data) + offsetCoeff
 
     _,minmax,mean,variance,skewness,kurtosis = describe(data)
 
@@ -151,7 +183,7 @@ def parse_vibration():
 def model_inference_lite():
 
     xInference = np.array(request.json['values']).astype(np.float32)
-    modelId = request.json['modelId']
+#    modelId = request.json['modelId']
 
     if PRELOAD_MODELS == True:
         global cnn_ae_lite_model
@@ -235,7 +267,7 @@ def classifier_inference_lite():
 def model_gmm():
 
     xInference = np.array(request.json['values']).astype(np.float32)
-    modelId = request.json['modelId']
+#    modelId = request.json['modelId']
 
     if PRELOAD_MODELS:
         global pca_gmm_model
