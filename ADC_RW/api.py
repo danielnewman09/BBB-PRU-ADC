@@ -42,6 +42,7 @@ cwd = os.path.dirname(os.path.abspath(__file__))
 
 PRELOAD_MODELS = True
 basePath = '/home/debian/Git/Edge-Analytics-IoT-Framework/'
+basePath = '/home/debian/Git/Edge-Analytics-IoT-Framework/EMCO-Case-Study/'
 #basePath = '/home/dnewman/Documents/Github/Edge-Analytics-IoT-Framework/'
 
 
@@ -129,7 +130,6 @@ def parse_vibration(fftPoints,samplingInterval,scalingCoeff,offsetCoeff):
     raw_data = f.read()
 
     data = np.frombuffer(raw_data,dtype=np.uint16).astype(float)
-
     data = (scalingCoeff * data) + offsetCoeff
 
     _,minmax,mean,variance,skewness,kurtosis = describe(data)
@@ -206,6 +206,7 @@ def classifier_inference_lite_route():
     modelId = request.json['modelId']
 
     output = {
+        'modelId':modelId,
         'values':classifier_inference_lite(xInference),
     }
 
@@ -253,7 +254,8 @@ def model_gmm_route():
     xInference = np.array(request.json['values']).astype(np.float32)
 
     output = {
-        'values':model_gmm(xInference)
+        'modelId':request.json['modelId'],
+        'values':model_gmm(xInference),
     }
 
     return jsonify(output),201
@@ -279,6 +281,7 @@ def model_gnb_route():
     modelId = request.json['modelId']
 
     output = {
+        'modelId':modelId,
         'values':model_gnb(xInference)
     }
 
