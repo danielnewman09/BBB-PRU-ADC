@@ -41,10 +41,11 @@ cwd = os.path.dirname(os.path.abspath(__file__))
 
 
 PRELOAD_MODELS = True
+
 basePath = '/home/debian/Git/Edge-Analytics-IoT-Framework/'
 basePath = '/home/debian/Git/Edge-Analytics-IoT-Framework/EMCO-Case-Study/'
-#basePath = '/home/dnewman/Documents/Github/Edge-Analytics-IoT-Framework/'
 
+#basePath = '/home/dnewman/Documents/Github/Edge-Analytics-IoT-Framework/'
 
 if PRELOAD_MODELS == True:
 
