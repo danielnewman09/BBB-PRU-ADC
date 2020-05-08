@@ -43,7 +43,7 @@ cwd = os.path.dirname(os.path.abspath(__file__))
 PRELOAD_MODELS = True
 
 basePath = '/home/debian/Git/Edge-Analytics-IoT-Framework/'
-basePath = '/home/debian/Git/Edge-Analytics-IoT-Framework/EMCO-Case-Study/'
+#basePath = '/home/debian/Git/Edge-Analytics-IoT-Framework/EMCO-Case-Study/'
 
 #basePath = '/home/dnewman/Documents/Github/Edge-Analytics-IoT-Framework/'
 
@@ -80,19 +80,18 @@ def save_model():
 
 @app.route('/features/parse/rms',methods=['POST'])
 def parse_rms_route():
-
-    output = {'RMS':parse_rms()}
+    scalingCoeff = request.json['accelerationCoeff1']
+    offsetCoeff = request.json['accelerationCoeff0']
+    output = {'RMS':parse_rms(scalingCoeff,offsetCoeff)}
     return jsonify(output), 201
 
-def parse_rms():
+def parse_rms(scalingCoeff,offsetCoeff):
 
     f = open('/usr/local/lib/node_modules/node-red/output.0','rb')
 
     raw_data = f.read()
 
     data = np.frombuffer(raw_data,dtype=np.uint16).astype(float)
-    scalingCoeff = request.json['accelerationCoeff1']
-    offsetCoeff = request.json['accelerationCoeff0']
 
     data = (scalingCoeff * data) + offsetCoeff
 
@@ -101,6 +100,16 @@ def parse_rms():
     sampleRMS = np.sqrt(1 / data.shape[0] * np.sum((data - mean)**2))
 
     return sampleRMS
+
+@app.route('/features/parse/timedomain',methods=['POST'])
+def parse_timedomain_route():
+
+    scalingCoeff = request.json['accelerationCoeff1']
+    offsetCoeff = request.json['accelerationCoeff0']
+
+    output = parse_vibration(scalingCoeff,offsetCoeff)
+
+    return jsonify(output), 201
 
 
 @app.route('/features/parse/vibration',methods=['POST'])
@@ -111,7 +120,7 @@ def parse_vibration_route():
     scalingCoeff = request.json['accelerationCoeff1']
     offsetCoeff = request.json['accelerationCoeff0']
 
-    output = parse_vibration(fftPoints,samplingInterval,scalingCoeff,offsetCoeff)
+    output = parse_vibration(scalingCoeff,offsetCoeff,fftPoints,samplingInterval)
 
     return jsonify(output), 201
 
@@ -124,7 +133,7 @@ def parse_raw_vibration_route():
     return jsonify(output), 201
     
 
-def parse_vibration(fftPoints,samplingInterval,scalingCoeff,offsetCoeff):
+def parse_vibration(scalingCoeff,offsetCoeff,fftPoints=None,samplingInterval=None,returnVib=False):
 
     f = open('/usr/local/lib/node_modules/node-red/output.0','rb')
 
@@ -134,19 +143,19 @@ def parse_vibration(fftPoints,samplingInterval,scalingCoeff,offsetCoeff):
     data = (scalingCoeff * data) + offsetCoeff
 
     _,minmax,mean,variance,skewness,kurtosis = describe(data)
-
-    NyquistFrequency = 0.5 / samplingInterval
-
-    freqs,amps = signal.welch(data, fs=1 / samplingInterval, nperseg=fftPoints, scaling='spectrum')
-
-    frequencyInterval = freqs[1] - freqs[0]
-    # amps = lin_log_interp(amps)
+    if fftPoints != None and samplingInterval != None:
+        freqs,amps = signal.welch(data, fs=1 / samplingInterval, nperseg=fftPoints, scaling='spectrum')
+        frequencyInterval = freqs[1] - freqs[0]
+    else:
+        freqs = np.array([])
+        amps = np.array([])
+        frequencyInterval = 0.
 
     sampleRMS = np.sqrt(1 / data.shape[0] * np.sum((data - mean)**2))
 
     output = {'frequencyInterval':frequencyInterval,
               'fftAmps':amps[1:].tolist(),
-              'Vibration':data.tolist(),
+              # 'Vibration':data.tolist(),
               'RMS':sampleRMS,
               'Kurtosis':kurtosis,
               'Mean':mean,
