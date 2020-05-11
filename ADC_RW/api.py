@@ -154,7 +154,7 @@ def parse_vibration(scalingCoeff,offsetCoeff,fftPoints=None,samplingInterval=Non
     sampleRMS = np.sqrt(1 / data.shape[0] * np.sum((data - mean)**2))
 
     output = {'frequencyInterval':frequencyInterval,
-              'fftAmps':amps[1:].tolist(),
+              # 'fftAmps':amps[1:].tolist(),
               # 'Vibration':data.tolist(),
               'RMS':sampleRMS,
               'Kurtosis':kurtosis,
