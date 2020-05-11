@@ -43,7 +43,7 @@ cwd = os.path.dirname(os.path.abspath(__file__))
 PRELOAD_MODELS = True
 
 basePath = '/home/debian/Git/Edge-Analytics-IoT-Framework/'
-#basePath = '/home/debian/Git/Edge-Analytics-IoT-Framework/EMCO-Case-Study/'
+basePath = '/home/debian/Git/Edge-Analytics-IoT-Framework/EMCO-Case-Study/'
 
 #basePath = '/home/dnewman/Documents/Github/Edge-Analytics-IoT-Framework/'
 
@@ -80,18 +80,19 @@ def save_model():
 
 @app.route('/features/parse/rms',methods=['POST'])
 def parse_rms_route():
-    scalingCoeff = request.json['accelerationCoeff1']
-    offsetCoeff = request.json['accelerationCoeff0']
-    output = {'RMS':parse_rms(scalingCoeff,offsetCoeff)}
+
+    output = {'RMS':parse_rms()}
     return jsonify(output), 201
 
-def parse_rms(scalingCoeff,offsetCoeff):
+def parse_rms():
 
     f = open('/usr/local/lib/node_modules/node-red/output.0','rb')
 
     raw_data = f.read()
 
     data = np.frombuffer(raw_data,dtype=np.uint16).astype(float)
+    scalingCoeff = request.json['accelerationCoeff1']
+    offsetCoeff = request.json['accelerationCoeff0']
 
     data = (scalingCoeff * data) + offsetCoeff
 
@@ -100,16 +101,6 @@ def parse_rms(scalingCoeff,offsetCoeff):
     sampleRMS = np.sqrt(1 / data.shape[0] * np.sum((data - mean)**2))
 
     return sampleRMS
-
-@app.route('/features/parse/timedomain',methods=['POST'])
-def parse_timedomain_route():
-
-    scalingCoeff = request.json['accelerationCoeff1']
-    offsetCoeff = request.json['accelerationCoeff0']
-
-    output = parse_vibration(scalingCoeff,offsetCoeff)
-
-    return jsonify(output), 201
 
 
 @app.route('/features/parse/vibration',methods=['POST'])
@@ -120,38 +111,7 @@ def parse_vibration_route():
     scalingCoeff = request.json['accelerationCoeff1']
     offsetCoeff = request.json['accelerationCoeff0']
 
-    output = parse_vibration(scalingCoeff,offsetCoeff,fftPoints,samplingInterval)
-
-    return jsonify(output), 201
-
-@app.route('/features/vibration/inference',methods=['POST'])
-def parse_vibration_route():
-
-    fftPoints = request.json['fftPoints']
-    samplingInterval = request.json['samplingInterval']
-    scalingCoeff = request.json['accelerationCoeff1']
-    offsetCoeff = request.json['accelerationCoeff0']
-    modelId = request.json['modelId']
-
-    output = parse_vibration(scalingCoeff,offsetCoeff,fftPoints,samplingInterval)
-
-    xInference = output['fftAmps'][:1024]
-
-    if modelId == 'CNN-AE-Lite':
-        value = model_inference_lite(xInference)
-    elif modelId == 'CNN-MLP-Lite':
-        value = classifier_inference_lite(xInference)
-    elif modelId == 'PCA-GMM':
-        value = model_gmm(xInference)
-    elif modelId == 'PCA-GNB':
-        value = model_gnb(xInference)
-    else:
-        value = 0.
-    
-    output['modelId'] = modelId
-    output['values'] = value
-
-
+    output = parse_vibration(fftPoints,samplingInterval,scalingCoeff,offsetCoeff)
 
     return jsonify(output), 201
 
@@ -164,7 +124,7 @@ def parse_raw_vibration_route():
     return jsonify(output), 201
     
 
-def parse_vibration(scalingCoeff,offsetCoeff,fftPoints=None,samplingInterval=None,returnVib=False):
+def parse_vibration(fftPoints,samplingInterval,scalingCoeff,offsetCoeff):
 
     f = open('/usr/local/lib/node_modules/node-red/output.0','rb')
 
@@ -174,13 +134,13 @@ def parse_vibration(scalingCoeff,offsetCoeff,fftPoints=None,samplingInterval=Non
     data = (scalingCoeff * data) + offsetCoeff
 
     _,minmax,mean,variance,skewness,kurtosis = describe(data)
-    if fftPoints != None and samplingInterval != None:
-        freqs,amps = signal.welch(data, fs=1 / samplingInterval, nperseg=fftPoints, scaling='spectrum')
-        frequencyInterval = freqs[1] - freqs[0]
-    else:
-        freqs = np.array([])
-        amps = np.array([])
-        frequencyInterval = 0.
+
+    NyquistFrequency = 0.5 / samplingInterval
+
+    freqs,amps = signal.welch(data, fs=1 / samplingInterval, nperseg=fftPoints, scaling='spectrum')
+
+    frequencyInterval = freqs[1] - freqs[0]
+    # amps = lin_log_interp(amps)
 
     sampleRMS = np.sqrt(1 / data.shape[0] * np.sum((data - mean)**2))
 
