@@ -125,17 +125,18 @@ def parse_vibration_route():
     return jsonify(output), 201
 
 @app.route('/features/vibration/inference',methods=['POST'])
-def parse_vibration_route():
+def inference_vibration_route():
 
     fftPoints = request.json['fftPoints']
     samplingInterval = request.json['samplingInterval']
     scalingCoeff = request.json['accelerationCoeff1']
     offsetCoeff = request.json['accelerationCoeff0']
     modelId = request.json['modelId']
+    returnPSD = request.json['returnPSD']
 
     output = parse_vibration(scalingCoeff,offsetCoeff,fftPoints,samplingInterval)
 
-    xInference = output['fftAmps'][:1024]
+    xInference = np.array(output['fftAmps'][:1024])
 
     if modelId == 'CNN-AE-Lite':
         value = model_inference_lite(xInference)
@@ -151,7 +152,12 @@ def parse_vibration_route():
     output['modelId'] = modelId
     output['values'] = value
 
+    if returnPSD:
+        pass
+    else:
+        output['fftAmps'] = 0.
 
+    output['Vibration'] = 0.
 
     return jsonify(output), 201
 
