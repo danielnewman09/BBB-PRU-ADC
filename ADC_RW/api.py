@@ -39,6 +39,10 @@ cnn_mlp_lite_model = None
 
 cwd = os.path.dirname(os.path.abspath(__file__))
 
+import paho.mqtt.client as mqtt
+broker_url = "mqtt.eclipse.org"
+broker_port = 1883
+client = mqtt.Client()
 
 PRELOAD_MODELS = True
 
@@ -163,10 +167,35 @@ def inference_vibration_route():
 
 @app.route('/features/parse/rawvib',methods=['POST'])
 def parse_raw_vibration_route():
+    
+    fftPoints = request.json['fftPoints']
+    samplingInterval = request.json['samplingInterval']
+    scalingCoeff = request.json['accelerationCoeff1']
+    offsetCoeff = request.json['accelerationCoeff0']
+    
+    
     f = open('/usr/local/lib/node_modules/node-red/output.0','rb')
+
     raw_data = f.read()
+
     data = np.frombuffer(raw_data,dtype=np.uint16).astype(float)
-    output = {'values':data.tolist()}
+    data = (scalingCoeff * data) + offsetCoeff
+    
+
+    output = parse_vibration(scalingCoeff,offsetCoeff,fftPoints,samplingInterval)
+    
+    payload = {}
+    
+    payload['values'] = data.tolist()
+    payload["dateTime-Sent"] = int(datetime.datetime.now().timestamp() * 1000)
+    payload['modelId'] = 'CNN-AE-Lite'
+    payload['fftPoints'] = fftPoints
+    payload['samplingInterval'] = samplingInterval
+
+    client.connect(broker_url, broker_port)
+    client.publish("Asset/Chapter5/Vibration/Amazon-EC2",payload,qos=0, retain=False)
+    
+    output = {'success':True}
     return jsonify(output), 201
     
 
