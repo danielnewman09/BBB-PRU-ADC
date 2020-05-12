@@ -82,52 +82,6 @@ def save_model():
     return jsonify({'Output':True}),201
 
 
-@app.route('/features/parse/rms',methods=['POST'])
-def parse_rms_route():
-    scalingCoeff = request.json['accelerationCoeff1']
-    offsetCoeff = request.json['accelerationCoeff0']
-    output = {'RMS':parse_rms(scalingCoeff,offsetCoeff)}
-    return jsonify(output), 201
-
-def parse_rms(scalingCoeff,offsetCoeff):
-
-    f = open('/usr/local/lib/node_modules/node-red/output.0','rb')
-
-    raw_data = f.read()
-
-    data = np.frombuffer(raw_data,dtype=np.uint16).astype(float)
-
-    data = (scalingCoeff * data) + offsetCoeff
-
-    mean = np.mean(data)
-
-    sampleRMS = np.sqrt(1 / data.shape[0] * np.sum((data - mean)**2))
-
-    return sampleRMS
-
-@app.route('/features/parse/timedomain',methods=['POST'])
-def parse_timedomain_route():
-
-    scalingCoeff = request.json['accelerationCoeff1']
-    offsetCoeff = request.json['accelerationCoeff0']
-
-    output = parse_vibration(scalingCoeff,offsetCoeff)
-
-    return jsonify(output), 201
-
-
-@app.route('/features/parse/vibration',methods=['POST'])
-def parse_vibration_route():
-
-    fftPoints = request.json['fftPoints']
-    samplingInterval = request.json['samplingInterval']
-    scalingCoeff = request.json['accelerationCoeff1']
-    offsetCoeff = request.json['accelerationCoeff0']
-
-    output = parse_vibration(scalingCoeff,offsetCoeff,fftPoints,samplingInterval)
-
-    return jsonify(output), 201
-
 @app.route('/features/vibration/inference',methods=['POST'])
 def inference_vibration_route():
 
@@ -186,7 +140,7 @@ def parse_raw_vibration_route():
     
     payload = {}
     
-    payload['values'] = data.tolist()
+    payload['values'] = output['Vibration'].tolist()
     payload["dateTime-Sent"] = int(datetime.datetime.now().timestamp() * 1000)
     payload['modelId'] = 'CNN-AE-Lite'
     payload['fftPoints'] = fftPoints
@@ -230,16 +184,6 @@ def parse_vibration(scalingCoeff,offsetCoeff,fftPoints=None,samplingInterval=Non
 
     return output
 
-@app.route('/models/autoencoder/lite',methods=['POST'])
-def model_inference_lite_route():
-
-    xInference = np.array(request.json['values']).astype(np.float32)
-
-    output = {
-        'values':model_inference_lite(xInference),
-    }
-
-    return jsonify(output), 201
 
 def model_inference_lite(xInference):
     if PRELOAD_MODELS == True:
@@ -274,19 +218,6 @@ def model_inference_lite(xInference):
 
     return mse
 
-
-@app.route('/models/mlp-classifier/lite',methods=['POST'])
-def classifier_inference_lite_route():
-
-    xInference = np.atleast_2d(np.array(request.json['values']).astype(np.float32))
-    modelId = request.json['modelId']
-
-    output = {
-        'modelId':modelId,
-        'values':classifier_inference_lite(xInference),
-    }
-
-    return jsonify(output), 201
 
 def classifier_inference_lite(xInference):
 
@@ -324,17 +255,6 @@ def classifier_inference_lite(xInference):
     return classification
 
 
-@app.route('/models/gmm',methods=['POST'])
-def model_gmm_route():
-
-    xInference = np.array(request.json['values']).astype(np.float32)
-
-    output = {
-        'modelId':request.json['modelId'],
-        'values':model_gmm(xInference),
-    }
-
-    return jsonify(output),201
 
 def model_gmm(xInference):
 
@@ -350,18 +270,6 @@ def model_gmm(xInference):
     return log_likelihood.flatten()[0].astype(float)
 
 
-@app.route('/models/gnb',methods=['POST'])
-def model_gnb_route():
-
-    xInference = np.atleast_2d(np.array(request.json['values']).astype(np.float32))
-    modelId = request.json['modelId']
-
-    output = {
-        'modelId':modelId,
-        'values':model_gnb(xInference)
-    }
-
-    return jsonify(output),201
 
 def model_gnb(xInference):
 
