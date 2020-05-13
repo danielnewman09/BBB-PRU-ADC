@@ -46,7 +46,7 @@ client = mqtt.Client()
 
 PRELOAD_MODELS = True
 
-basePath = '/home/debian/Git/Edge-Analytics-IoT-Framework/'
+basePath = '/home/daniel/Git/Edge-Analytics-IoT-Framework/'
 #basePath = '/home/debian/Git/Edge-Analytics-IoT-Framework/EMCO-Case-Study/'
 
 #basePath = '/home/dnewman/Documents/Github/Edge-Analytics-IoT-Framework/'
