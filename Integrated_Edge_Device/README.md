@@ -87,3 +87,72 @@ python3 -m pip install -U scikit-learn --no-deps
 ```
 
 
+## Python API Setup
+
+This repository also contains code to extract statistical features from a vibration payload. It leverages a Flask REST API to efficiently do so. 
+
+The python code requires libraries such as numpy and scipy. Start by installing them
+
+```bash
+sudo apt-get update
+python3 -m pip install wheel uwsgi flask
+```
+
+Create a service file:
+
+```bash
+sudo nano /etc/systemd/system/python_api.service
+```
+
+and paste this code into it
+
+```bash
+[Unit]
+Description=uWSGI instance to serve api
+After=network.target
+
+[Service]
+User=debian
+Group=debian
+WorkingDirectory=/<path_to_pthon_files>/
+Environment="PATH=/usr/bin/python3"
+ExecStart=/home/debian/.local/bin/uwsgi --ini api.ini
+
+
+[Install]
+WantedBy=multi-user.target
+
+```
+
+Be sure to change the WorkingDirectory line to point to the directory which houses ```BBB-PRU_ADC/BBB``` from this repository.
+
+Start this service
+
+```bash
+sudo systemctl start python_api
+sudo systemctl enable python_api
+```
+
+It will take several seconds to fully load. You can verify it is running by ```systemctl status python_api```:
+
+```bash
+root@beaglebone:/home/debian/# systemctl status edge_ml_api
+● python_api.service - uWSGI instance to serve api
+   Loaded: loaded (/etc/systemd/system/python_api.service; enabled; vendor pres
+   Active: active (running) since Thu 2020-04-02 15:49:34 UTC; 3 days ago
+ Main PID: 821 (uwsgi)
+    Tasks: 7 (limit: 4915)
+   CGroup: /system.slice/edge_ml_api.service
+           ├─ 821 /home/debian/.local/bin/uwsgi --ini api.ini
+           ├─1418 /home/debian/.local/bin/uwsgi --ini api.ini
+           ├─1419 /home/debian/.local/bin/uwsgi --ini api.ini
+           ├─1420 /home/debian/.local/bin/uwsgi --ini api.ini
+           ├─1421 /home/debian/.local/bin/uwsgi --ini api.ini
+           ├─1422 /home/debian/.local/bin/uwsgi --ini api.ini
+           └─1423 /home/debian/.local/bin/uwsgi --ini api.ini
+
+Apr 06 12:08:15 beaglebone uwsgi[821]: [pid: 1421|app: 0|req: 38543/80926] 127.0
+Apr 06 12:08:19 beaglebone uwsgi[821]: [pid: 1422|app: 0|req: 39798/80927] 127.0
+Apr 06 12:08:23 beaglebone uwsgi[821]: [pid: 1421|app: 0|req: 38544/80928] 127.0
+Apr 06 12:08:27 beaglebone uwsgi[821]: [pid: 1422|app: 0|req: 39799/80929] 127.0
+```
