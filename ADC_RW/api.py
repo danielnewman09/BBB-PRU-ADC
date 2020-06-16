@@ -47,7 +47,7 @@ client = mqtt.Client()
 
 PRELOAD_MODELS = True
 
-basePath = '/home/debian/Git/Edge-Analytics-IoT-Framework/'
+basePath = '/home/daniel/Git/Edge-Analytics-IoT-Framework/'
 #basePath = '/home/debian/Git/Edge-Analytics-IoT-Framework/EMCO-Case-Study/'
 
 #basePath = '/home/dnewman/Documents/Github/Edge-Analytics-IoT-Framework/'
@@ -161,6 +161,31 @@ def parse_raw_vibration_route():
     output = payload
     return raw_data, 201
     
+
+def parse_vibration_remote(data,fftPoints,samplingInterval,scalingCoeff,offsetCoeff):
+
+    data = (scalingCoeff * data) + offsetCoeff
+
+    _,minmax,mean,variance,skewness,kurtosis = describe(data)
+
+    NyquistFrequency = 0.5 / samplingInterval
+
+    freqs,amps = signal.welch(data, fs=1 / samplingInterval, nperseg=fftPoints, scaling='spectrum')
+
+    frequencyInterval = freqs[1] - freqs[0]
+    # amps = lin_log_interp(amps)
+
+    sampleRMS = np.sqrt(1 / data.shape[0] * np.sum((data - mean)**2))
+
+    output = {'frequencyInterval':frequencyInterval,
+              'fftAmps':amps[1:].tolist(),
+              'Vibration':data.tolist(),
+              'RMS':sampleRMS,
+              'Kurtosis':kurtosis,
+              'Mean':mean,
+              'Skewness':skewness,
+              'Variance':variance}
+    return output
 
 def parse_vibration(scalingCoeff,offsetCoeff,fftPoints=None,samplingInterval=None,returnVib=False):
 
