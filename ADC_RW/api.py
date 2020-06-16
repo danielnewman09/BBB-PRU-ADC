@@ -40,6 +40,7 @@ cnn_mlp_lite_model = None
 cwd = os.path.dirname(os.path.abspath(__file__))
 
 import paho.mqtt.client as mqtt
+import paho.mqtt.publish as publish
 broker_url = "mqtt.eclipse.org"
 broker_port = 1883
 client = mqtt.Client()
@@ -84,7 +85,7 @@ def save_model():
 
 @app.route('/features/vibration/inference',methods=['POST'])
 def inference_vibration_route():
-
+    receive_time = int(datetime.datetime.now().timestamp() * 1000)
     fftPoints = request.json['fftPoints']
     samplingInterval = request.json['samplingInterval']
     scalingCoeff = request.json['accelerationCoeff1']
@@ -95,6 +96,8 @@ def inference_vibration_route():
     output = parse_vibration(scalingCoeff,offsetCoeff,fftPoints,samplingInterval)
 
     xInference = np.array(output['fftAmps'][:1024])
+
+    parse_time = int(datetime.datetime.now().timestamp() * 1000)
 
     if modelId == 'CNN-AE-Lite':
         value = model_inference_lite(xInference)
@@ -110,12 +113,16 @@ def inference_vibration_route():
     output['modelId'] = modelId
     output['values'] = value
 
+    inference_time = int(datetime.datetime.now().timestamp() * 1000)
+
     if returnPSD:
         pass
     else:
         output['fftAmps'] = 0.
 
     output['Vibration'] = 0.
+    output['parseTime'] = int(parse_time - receive_time)
+    output['inferenceTime'] = int(inference_time - parse_time)
 
     return jsonify(output), 201
 
@@ -136,21 +143,23 @@ def parse_raw_vibration_route():
     data = (scalingCoeff * data) + offsetCoeff
     
 
-    output = parse_vibration(scalingCoeff,offsetCoeff,fftPoints,samplingInterval)
+    #output = parse_vibration(scalingCoeff,offsetCoeff,fftPoints,samplingInterval)
     
     payload = {}
     
-    payload['values'] = output['Vibration'].tolist()
-    payload["dateTime-Sent"] = int(datetime.datetime.now().timestamp() * 1000)
-    payload['modelId'] = 'CNN-AE-Lite'
-    payload['fftPoints'] = fftPoints
-    payload['samplingInterval'] = samplingInterval
-
-    client.connect(broker_url, broker_port)
-    client.publish("Asset/Chapter5/Vibration/Amazon-EC2",payload,qos=0, retain=False)
+    payload['values'] = raw_data
+    #payload['dateTime-Sent'] = int(datetime.datetime.now().timestamp() * 1000)
+    #payload['modelId'] = 'CNN-AE-Lite'
+    #payload['fftPoints'] = fftPoints
+    #payload['samplingInterval'] = samplingInterval
+    #payload['accelerationCoeff1'] = scalingCoeff
+    #payload['accelerationCoeff0'] = offsetCoeff
+    #client.connect(broker_url,broker_port)
+    #publish.single("Asset/Chapter5/Vibration/Amazon-EC2",str(payload),hostname="mqtt.eclipse.org")
     
-    output = {'success':True}
-    return jsonify(output), 201
+    #output = {'success':True}
+    output = payload
+    return raw_data, 201
     
 
 def parse_vibration(scalingCoeff,offsetCoeff,fftPoints=None,samplingInterval=None,returnVib=False):
