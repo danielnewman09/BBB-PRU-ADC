@@ -7,6 +7,8 @@ The purpose of this is to document the development of an edge device which can a
 
 ### Install Tensorflow (Requires Python 3.5)
 
+The wheel file in this directory has been generated with the help of [https://github.com/lhelontra/tensorflow-on-arm](this repository). If you wish to use a different version of Tensorflow or Python, you will need to build Tensorflow on your own.
+
 Before installing tensorflow, you need to install a couple of libraries.
 
 ```bash
