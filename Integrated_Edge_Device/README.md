@@ -1,11 +1,13 @@
 # Integrated Edge Device
 
-The purpose of this is to document the development of an edge device which can acquire, parse, publish, and analyze vibration data 
+The purpose of this is to document the development of an edge device which can acquire, parse, publish, and analyze vibration data. The instructions on this repository are specific to the Beaglebone platform and have been tested on the Beaglebone Black and Pocketbeagle.
 
 ## Preparing the Beaglebone
 
 
 ### Install Tensorflow (Requires Python 3.5)
+
+The wheel file in this directory has been generated with the help of [this repository](https://github.com/lhelontra/tensorflow-on-arm). If you wish to use a different version of Tensorflow or Python, you will need to build Tensorflow on your own.
 
 Before installing tensorflow, you need to install a couple of libraries.
 
