@@ -1,6 +1,6 @@
 # Integrated Edge Device
 
-The purpose of this is to document the development of an edge device which can acquire, parse, publish, and analyze vibration data 
+The purpose of this is to document the development of an edge device which can acquire, parse, publish, and analyze vibration data. The instructions on this repository are specific to the Beaglebone platform and have been tested on the Beaglebone Black and Pocketbeagle.
 
 ## Preparing the Beaglebone
 
