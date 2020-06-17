@@ -1,4 +1,3 @@
-
 /** \file rb_file.c
 \brief Example: fetch ADC samples in a ring buffer and save to file.
 

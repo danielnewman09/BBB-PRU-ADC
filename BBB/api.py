@@ -20,13 +20,15 @@ import tensorflow as tf
 
 from joblib import dump, load
 
+from utils import lin_log_interp
+
 basePath = '/home/debian/Git/Edge-Analytics-IoT-Framework/'
 
 pca_gmm_model = load(basePath + "Models/GMM/PCA-GMM.joblib")
-cnn_ae_lite_model = tf.lite.Interpreter(model_path=basePath + "Models/Autoencoder/Lite/CNN-AE-Lite.tflite")
+autoencoder_lite_model = tf.lite.Interpreter(model_path=basePath + "Models/Autoencoder/Lite/CNN-AE-Lite.tflite")
 
 pca_gnb_model = load(basePath + "Models/GNB/PCA-GNB.joblib")
-cnn_mlp_lite_model = tf.lite.Interpreter(model_path=basePath + "Models/MLP-Classifier/Lite/CNN-MLP-Lite.tflite")
+classifier_lite_model = tf.lite.Interpreter(model_path=basePath + "Models/MLP-Classifier/Lite/CNN-MLP-Lite.tflite")
 
 
 
@@ -58,7 +60,7 @@ def inference_vibration_route():
 
     output = parse_vibration(scalingCoeff,offsetCoeff,fftPoints,samplingInterval)
 
-    xInference = np.array(output['fftAmps'])
+    xInference = lin_log_interp(np.array(output['fftAmps']))
 
     if modelId == 'CNN-AE-Lite':
         value = autoencoder_lite(xInference)
@@ -71,9 +73,9 @@ def inference_vibration_route():
     else:
         value = 0.
     
-    returnVal = {'values':value}
+    output['values'] = value
 
-    return jsonify(returnVal), 201
+    return jsonify(output), 201
 
 def parse_vibration(scalingCoeff,
                     offsetCoeff,
@@ -97,7 +99,7 @@ def parse_vibration(scalingCoeff,
 
     output = {'frequencyInterval':frequencyInterval,
               'fftAmps':amps.tolist(),
-              'Vibration':data.tolist(),
+              # 'Vibration':data.tolist(),
               'RMS':sampleRMS,
               'Kurtosis':kurtosis,
               'Mean':mean,
@@ -196,7 +198,7 @@ def model_gnb(xInference):
     
     fft_dimension = model[0].n_features_
 
-    classification = model.predict_proba(xInference[:fft_dimension]).flatten()[0]
+    classification = model.predict_proba(np.expand_dims(xInference[:fft_dimension],axis=0)).flatten()[0]
 
     return classification
 
