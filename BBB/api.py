@@ -14,9 +14,9 @@ import numpy as np
 from scipy import signal
 from scipy.stats import describe
 
-from tensorflow.keras.models import load_model
-from tensorflow.keras.metrics import mean_squared_error
-import tensorflow as tf
+# from tensorflow.keras.models import load_model
+# from tensorflow.keras.metrics import mean_squared_error
+# import tensorflow as tf
 
 from joblib import dump, load
 
@@ -25,10 +25,10 @@ from utils import lin_log_interp
 basePath = '/home/debian/Git/Edge-Analytics-IoT-Framework/'
 
 pca_gmm_model = load(basePath + "Models/GMM/PCA-GMM.joblib")
-autoencoder_lite_model = tf.lite.Interpreter(model_path=basePath + "Models/Autoencoder/Lite/CNN-AE-Lite.tflite")
+# autoencoder_lite_model = tf.lite.Interpreter(model_path=basePath + "Models/Autoencoder/Lite/CNN-AE-Lite.tflite")
 
 pca_gnb_model = load(basePath + "Models/GNB/PCA-GNB.joblib")
-classifier_lite_model = tf.lite.Interpreter(model_path=basePath + "Models/MLP-Classifier/Lite/CNN-MLP-Lite.tflite")
+# classifier_lite_model = tf.lite.Interpreter(model_path=basePath + "Models/MLP-Classifier/Lite/CNN-MLP-Lite.tflite")
 
 
 
@@ -62,10 +62,10 @@ def inference_vibration_route():
 
     xInference = lin_log_interp(np.array(output['fftAmps']))
 
-    if modelId == 'CNN-AE-Lite':
-        value = autoencoder_lite(xInference)
-    elif modelId == 'CNN-MLP-Lite':
-        value = classifier_lite(xInference)
+#     if modelId == 'CNN-AE-Lite':
+#         value = autoencoder_lite(xInference)
+#     elif modelId == 'CNN-MLP-Lite':
+#         value = classifier_lite(xInference)
     elif modelId == 'PCA-GMM':
         value = model_gmm(xInference)
     elif modelId == 'PCA-GNB':
@@ -109,68 +109,68 @@ def parse_vibration(scalingCoeff,
     return output
 
 
-def autoencoder_lite(xInference):
+# def autoencoder_lite(xInference):
     
 
-    global autoencoder_lite_model
-    interpreter = autoencoder_lite_model
+#     global autoencoder_lite_model
+#     interpreter = autoencoder_lite_model
 
-    interpreter.allocate_tensors()
+#     interpreter.allocate_tensors()
 
-    # Get input and output tensors.
-    input_details = interpreter.get_input_details()
-    output_details = interpreter.get_output_details()
+#     # Get input and output tensors.
+#     input_details = interpreter.get_input_details()
+#     output_details = interpreter.get_output_details()
 
-    # Test model on random input data.
-    input_shape = input_details[0]['shape']
-    fft_dimension = np.amax(input_shape)
+#     # Test model on random input data.
+#     input_shape = input_details[0]['shape']
+#     fft_dimension = np.amax(input_shape)
     
-    input_data = xInference[:fft_dimension].reshape(input_shape).astype(np.float32)
+#     input_data = xInference[:fft_dimension].reshape(input_shape).astype(np.float32)
 
-    num_samples = 1
+#     num_samples = 1
 
-    interpreter.set_tensor(input_details[0]['index'], input_data)
-    interpreter.invoke()
+#     interpreter.set_tensor(input_details[0]['index'], input_data)
+#     interpreter.invoke()
 
-    # The function `get_tensor()` returns a copy of the tensor data.
-    # Use `tensor()` in order to get a pointer to the tensor.
-    output_data = interpreter.get_tensor(output_details[0]['index']).reshape(input_shape)
+#     # The function `get_tensor()` returns a copy of the tensor data.
+#     # Use `tensor()` in order to get a pointer to the tensor.
+#     output_data = interpreter.get_tensor(output_details[0]['index']).reshape(input_shape)
 
-    input_data = np.repeat(input_data,num_samples,axis=0)
+#     input_data = np.repeat(input_data,num_samples,axis=0)
 
-    mse = mean_squared_error(output_data,input_data).numpy().flatten()[0].astype(float)
+#     mse = mean_squared_error(output_data,input_data).numpy().flatten()[0].astype(float)
 
-    return mse
+#     return mse
 
 
-def classifier_lite(xInference):
+# def classifier_lite(xInference):
 
-    global classifier_lite_model
-    interpreter = classifier_lite_model
+#     global classifier_lite_model
+#     interpreter = classifier_lite_model
     
-    interpreter.allocate_tensors()
+#     interpreter.allocate_tensors()
 
-    # Get input and output tensors.
-    input_details = interpreter.get_input_details()
-    output_details = interpreter.get_output_details()
+#     # Get input and output tensors.
+#     input_details = interpreter.get_input_details()
+#     output_details = interpreter.get_output_details()
     
-    # Test model on random input data.
-    input_shape = input_details[0]['shape']
-    fft_dimension = np.amax(input_shape)
+#     # Test model on random input data.
+#     input_shape = input_details[0]['shape']
+#     fft_dimension = np.amax(input_shape)
     
-    input_data = xInference[:fft_dimension].reshape(input_shape).astype(np.float32)
-    output_shape = output_details[0]['shape']
+#     input_data = xInference[:fft_dimension].reshape(input_shape).astype(np.float32)
+#     output_shape = output_details[0]['shape']
 
-    interpreter.set_tensor(input_details[0]['index'], input_data)
-    interpreter.invoke()
+#     interpreter.set_tensor(input_details[0]['index'], input_data)
+#     interpreter.invoke()
 
-    # The function `get_tensor()` returns a copy of the tensor data.
-    # Use `tensor()` in order to get a pointer to the tensor.
-    output_data = interpreter.get_tensor(output_details[0]['index']).flatten()
+#     # The function `get_tensor()` returns a copy of the tensor data.
+#     # Use `tensor()` in order to get a pointer to the tensor.
+#     output_data = interpreter.get_tensor(output_details[0]['index']).flatten()
     
-    classification = output_data[0].astype(float)
+#     classification = output_data[0].astype(float)
 
-    return classification
+#     return classification
 
 
 
