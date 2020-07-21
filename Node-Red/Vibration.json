@@ -1,0 +1,227 @@
+[
+    {
+        "id": "15c5d86b.62f7b8",
+        "type": "tab",
+        "label": "Vibration",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "63ea72e.b75308c",
+        "type": "function",
+        "z": "15c5d86b.62f7b8",
+        "name": "Set Sampling Parameters",
+        "func": "\nif (global.get(\"itemWorkStatus\") == \"Started\"){\n\n    var sampleSize = global.get(\"sampleSizeAcceleration\");\n    var sampleInterval = global.get(\"sampleIntervalAcceleration\");\n    \n    sampleInterval = ~~(sampleInterval * 1e9 + 0.5);\n    msg.payload = ' -n ' + sampleSize.toString() + ' -dt ' + sampleInterval.toString();\n    \n    var now = new Date();\n    flow.set(\"accelStart\",now.valueOf());\n    \n    return msg;\n}",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 290,
+        "y": 40,
+        "wires": [
+            [
+                "6bc2050b.6ca1dc",
+                "4fc02df5.1833c4"
+            ]
+        ]
+    },
+    {
+        "id": "4fc02df5.1833c4",
+        "type": "exec",
+        "z": "15c5d86b.62f7b8",
+        "command": "python /home/debian/Git/BBB-PRU-ADC/PRU/rb_file.py",
+        "addpay": true,
+        "append": "",
+        "useSpawn": "false",
+        "timer": "",
+        "oldrc": false,
+        "name": "Execute PRU Measurements",
+        "x": 600,
+        "y": 60,
+        "wires": [
+            [
+                "99215db.af174a"
+            ],
+            [],
+            []
+        ]
+    },
+    {
+        "id": "b335d7f5.e3bda8",
+        "type": "http request",
+        "z": "15c5d86b.62f7b8",
+        "name": "Feature Extraction",
+        "method": "POST",
+        "ret": "txt",
+        "url": "localhost:5000/features/vibration/inference",
+        "tls": "",
+        "x": 630,
+        "y": 120,
+        "wires": [
+            [
+                "4addab6d.0580c4"
+            ]
+        ]
+    },
+    {
+        "id": "4addab6d.0580c4",
+        "type": "json",
+        "z": "15c5d86b.62f7b8",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 790,
+        "y": 120,
+        "wires": [
+            [
+                "21c8f888.0fe9f8"
+            ]
+        ]
+    },
+    {
+        "id": "61a27591.8dc9bc",
+        "type": "function",
+        "z": "15c5d86b.62f7b8",
+        "name": "Create HTTP Request",
+        "func": "var fftPoints = global.get(\"fftPoints\");\n\nmsg.payload = {};\n// msg.payload['values'] = vibration;\nmsg.payload['fftPoints'] = fftPoints;\nmsg.payload['accelerationCoeff0'] = global.get(\"accelerationCoef0\");\nmsg.payload['accelerationCoeff1'] = global.get(\"accelerationCoef1\");\nmsg.payload['samplingInterval'] = global.get(\"sampleIntervalAcceleration\");\nmsg.payload['modelId'] = 'PCA-GNB';\n\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 400,
+        "y": 120,
+        "wires": [
+            [
+                "b335d7f5.e3bda8"
+            ]
+        ]
+    },
+    {
+        "id": "8f0c361b.bd71a8",
+        "type": "inject",
+        "z": "15c5d86b.62f7b8",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 100,
+        "y": 40,
+        "wires": [
+            [
+                "63ea72e.b75308c"
+            ]
+        ]
+    },
+    {
+        "id": "6bc2050b.6ca1dc",
+        "type": "debug",
+        "z": "15c5d86b.62f7b8",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "x": 610,
+        "y": 20,
+        "wires": []
+    },
+    {
+        "id": "99215db.af174a",
+        "type": "function",
+        "z": "15c5d86b.62f7b8",
+        "name": "Ensure program completed",
+        "func": "var now = new Date();\nvar elapsedTime = (now.valueOf() - flow.get(\"accelStart\")) / 1000;\nvar sampleTime = global.get(\"sampleIntervalAcceleration\") * global.get(\"sampleSizeAcceleration\");\n\nif (elapsedTime >= sampleTime) {\n    return msg;    \n} \n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 160,
+        "y": 120,
+        "wires": [
+            [
+                "61a27591.8dc9bc"
+            ]
+        ]
+    },
+    {
+        "id": "21c8f888.0fe9f8",
+        "type": "function",
+        "z": "15c5d86b.62f7b8",
+        "name": "Generate MQTT Message",
+        "func": "var statusText = \"\";\nvar topic = \"Asset/\" + global.get(\"assetId\") + \"/Vibration\";\nvar now = new Date();\n// Build payload\nmsg.payload[\"dateTime\"] = now.toISOString();\nmsg.payload[\"assetId\"] = global.get(\"assetId\");\nmsg.payload[\"dataItemId\"] = \"Vibration\";\nmsg.payload[\"samplingInterval\"] = global.get(\"sampleIntervalAcceleration\") \nmsg.payload[\"sensorId\"] = global.get(\"sensorIdA1\");\nmsg.payload[\"itemInstanceId\"] = msg.itemInstanceId;\n\nmsg.topic = topic;\n\n// Printout a status variable.\nstatusText = now.toISOString();\nnode.status({fill:\"green\", shape:\"dot\", text: statusText});\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 1010,
+        "y": 120,
+        "wires": [
+            [
+                "e975f582.74a3f8"
+            ]
+        ]
+    },
+    {
+        "id": "e975f582.74a3f8",
+        "type": "mqtt out",
+        "z": "15c5d86b.62f7b8",
+        "name": "",
+        "topic": "",
+        "qos": "",
+        "retain": "false",
+        "broker": "aa494282.bd94",
+        "x": 1230,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "aa494282.bd94",
+        "type": "mqtt-broker",
+        "z": "",
+        "name": "",
+        "broker": "mb28.iotfm.org",
+        "port": "8883",
+        "tls": "5b3c6353.7be57c",
+        "clientid": "",
+        "usetls": true,
+        "compatmode": false,
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": ""
+    },
+    {
+        "id": "5b3c6353.7be57c",
+        "type": "tls-config",
+        "z": "",
+        "name": "",
+        "cert": "/home/debian/mb28thing1/5f7cc8ade0-certificate.pem.crt",
+        "key": "/home/debian/mb28thing1/5f7cc8ade0-private.pem.key",
+        "ca": "/home/debian/mb28thing1/AmazonRootCA1.pem",
+        "certname": "",
+        "keyname": "5f7cc8ade0-private.pem.key",
+        "caname": "AmazonRootCA1.pem",
+        "servername": "",
+        "verifyservercert": false
+    }
+]
