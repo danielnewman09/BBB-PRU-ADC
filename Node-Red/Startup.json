@@ -1,0 +1,54 @@
+[
+    {
+        "id": "35898ef5.6cb772",
+        "type": "tab",
+        "label": "Startup",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "a59dd92a.528e68",
+        "type": "function",
+        "z": "35898ef5.6cb772",
+        "name": "Set Global Variables",
+        "func": "\nglobal.set(\"assetId\",\"EMCO-MMM\");\nglobal.set(\"itemWorkStatus\",\"Started\");\nglobal.set(\"SpindleSpeed\",0);\nglobal.set(\"programName\",\"\");\nglobal.set(\"fftPoints\",2048);\nglobal.set(\"sampleSizeAcceleration\",10000);\nglobal.set(\"sampleIntervalAcceleration\",1/10000);\n\n\n// Resistor 1: 68 kOhm\nvar r1 = 1;\n\n// Resistor 2: 33 kOhm\nvar r2 = 1;\n\n// Max voltage read by the PRU\nvar maxVoltage = 1.8;\n\n// Max decimal number for a 12 bit reading\nvar maxDecimal = 4096;\n\nvar dividerCoeff = r2 / (r2 + r1);\n\n// Sensitivity: 1000 mV / g\n// max Decimal Value: 4096\n// Max Voltage: 1.8V\n\n// Value in Volts\n// value * 1.8 / 4096\n\n// Value in volts at output\n// value / dividerCoeff\n\n// Volts at output to g\n\n// Acceleratin calibration values\nglobal.set(\"accelerationCoef0\", -2.5 );\nglobal.set(\"accelerationCoef1\", maxVoltage / maxDecimal / dividerCoeff);\n\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 400,
+        "y": 180,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "a13fbbcd.b3d9a8",
+        "type": "inject",
+        "z": "35898ef5.6cb772",
+        "name": "Inject on Startup",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 180,
+        "wires": [
+            [
+                "a59dd92a.528e68"
+            ]
+        ]
+    }
+]
