@@ -4,6 +4,7 @@ My attempt at setting up and documenting the use of the Beaglebone Black PRU for
 __This tutorial has been tested on the following images:__
 
 https://debian.beagleboard.org/images/bone-debian-9.5-iot-armhf-2018-10-07-4gb.img.xz
+
 https://debian.beagleboard.org/images/bone-debian-9.9-lxqt-armhf-2019-08-03-4gb.img.xz
 
 https://debian.beagleboard.org/images/bone-debian-10.3-iot-armhf-2020-04-06-4gb.img.xz
