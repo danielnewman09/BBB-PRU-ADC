@@ -79,3 +79,7 @@ uboot_overlay_pru=/lib/firmware/AM335X-PRU-UIO-00A0.dtbo
 ```
 
 Now, you can begin running example code in python.
+
+## Setting up Node Red
+
+In order to get the files to run properly in Node Red, you must run them as the 'debian' user. I've found that changing some folder permissions and defaults for Node Red works for this. 
