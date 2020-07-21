@@ -28,8 +28,8 @@ sudo nano /etc/apt/sources.list
 Add these lines to the file:
 
 ```bash
-deb http://beagle.tuks.nl/debian jessie/
-deb-src http://beagle.tuks.nl/debian jessie/
+deb [trusted=yes] http://beagle.tuks.nl/debian jessie/
+deb-src [trusted=yes] http://beagle.tuks.nl/debian jessie/
 ```
 
 Then:
@@ -79,6 +79,8 @@ uboot_overlay_pru=/lib/firmware/AM335X-PRU-UIO-00A0.dtbo
 #enable_uboot_cape_universal=1
 ###
 ```
+
+Then reboot.
 
 Now, you can begin running example code in python.
 
