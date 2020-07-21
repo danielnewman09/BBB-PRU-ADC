@@ -4,10 +4,13 @@ My attempt at setting up and documenting the use of the Beaglebone Black PRU for
 __This tutorial has been tested on the following images:__
 
 https://debian.beagleboard.org/images/bone-debian-9.5-iot-armhf-2018-10-07-4gb.img.xz
-
 https://debian.beagleboard.org/images/bone-debian-9.9-lxqt-armhf-2019-08-03-4gb.img.xz
 
+https://debian.beagleboard.org/images/bone-debian-10.3-iot-armhf-2020-04-06-4gb.img.xz
+
 __NOTE:__ I believe that any newer debian image will work for the Beaglebone Black. I have tried using the Beaglebone AI but cannot find the PRUSS options on the current images for that device.
+
+__NOTE:__ The 10.3 image includes numpy and scipy in the Python3 installation. This is a fantastic addition to the Beaglebone image, and I recommend using it.
 
 Flash the image to an SD card and install on the Beaglebone. Log in to the device
 
@@ -148,4 +151,8 @@ drwxr-xr-x 30 root   root   4096 Jul 21 01:19 ..
 drwx------  3 debian debian 4096 Apr  6 13:28 .config
 drwxr-xr-x  5 debian debian 4096 Jul 21 13:06 .node-red
 ```
+restart Node Red
 
+```bash
+debian@beaglebone:~$ sudo systemctl restart nodered
+```
