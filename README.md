@@ -35,18 +35,16 @@ wget -qO - http://beagle.tuks.nl/debian/pubring.gpg | sudo apt-key add -
 sudo apt-get update
 ```
 
-To install the python/C libraries:
+To install the python libraries:
 
 ```bash
 sudo apt-get install python-pruio libpruio-lkm libpruio-doc
-sudo apt-get install libpruio-dev libpruio-lkm libpruio-doc
 ```
 
-Copy the python/C example files to a desired directory by:
+Copy the python example files to a desired directory by:
 
 ```bash
 cp -r /usr/share/doc/python-pruio/examples .
-cp -r /usr/share/doc/libpruio-dev/examples .
 ```
 
 When you try to run a python file, you should get an error like:
@@ -83,3 +81,71 @@ Now, you can begin running example code in python.
 ## Setting up Node Red
 
 In order to get the files to run properly in Node Red, you must run them as the 'debian' user. I've found that changing some folder permissions and defaults for Node Red works for this. 
+
+First, find the service file used to run Node Red. This seems to change from one distribution to the next, so a good way to know for sure is by checking the service:
+
+```bash
+debian@beaglebone:~/Git/BBB-PRU-ADC/PRU$ systemctl status nodered
+● nodered.service - Node-RED graphical event wiring tool
+   Loaded: loaded (/lib/systemd/system/nodered.service; disabled; vendor preset: enabled)
+   Active: active (running) since Tue 2020-07-21 13:05:36 UTC; 11min ago
+     Docs: https://nodered.org/docs/
+ Main PID: 16084 (node-red)
+    Tasks: 11 (limit: 1028)
+   Memory: 104.7M
+   CGroup: /system.slice/nodered.service
+           └─16084 node-red
+```
+
+NOTE: the name of the service may be "nodered" or "node-red." I don't see a rhyme or reason to why it's sometimes one or the other
+
+The service file from the above command is: ```/lib/systemd/system/nodered.service```. When we look at that file, we see where the Node Red installation is located on the machine:
+
+```bash
+debian@beaglebone:~/Git/BBB-PRU-ADC/PRU$ cat /lib/systemd/system/nodered.service
+# systemd service file to start Node-RED
+# From: https://github.com/node-red/linux-installers/blob/master/resources/nodered.service
+
+[Unit]
+Description=Node-RED graphical event wiring tool
+Wants=network.target
+Documentation=https://nodered.org/docs/
+After=multi-user.target
+
+[Service]
+Type=simple
+# Run as normal pi user - change to the user name you wish to run Node-RED as
+User=node-red
+Group=node-red
+WorkingDirectory=/var/lib/node-red
+```
+
+With this information, we want to change the User and Group lines to 'debian':
+
+```bash
+[Service]
+Type=simple
+# Run as normal pi user - change to the user name you wish to run Node-RED as
+User=debian
+Group=debian
+WorkingDirectory=/var/lib/node-red
+```
+Also note the WorkingDirectory. We want to make sure the debian user has ownership of this directory.
+
+```bash
+debian@beaglebone:~$ sudo chown -R debian /var/lib/node-red
+debian@beaglebone:~$ sudo chgrp -R debian /var/lib/node-red
+```
+
+After you do this, your Node Red working directory should look like so:
+
+```bash
+debian@beaglebone:~$ cd /var/lib/node-red
+debian@beaglebone:/var/lib/node-red$ ls -al
+total 16
+drwxr-xr-x  4 debian debian 4096 Jul 21 13:31 .
+drwxr-xr-x 30 root   root   4096 Jul 21 01:19 ..
+drwx------  3 debian debian 4096 Apr  6 13:28 .config
+drwxr-xr-x  5 debian debian 4096 Jul 21 13:06 .node-red
+```
+
