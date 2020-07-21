@@ -1,6 +1,14 @@
 # BBB-PRU-ADC
 My attempt at setting up and documenting the use of the Beaglebone Black PRU for reading an ADC
 
+I recommend cloning this repository to your working device:
+
+```bash
+debian@beaglebone:~$ cd ~/
+debian@beaglebone:~$ mkdir Git && cd Git
+debian@beaglebone:~/Git$ git clone https://github.com/danielnewman09/BBB-PRU-ADC.git
+```
+
 __This tutorial has been tested on the following images:__
 
 https://debian.beagleboard.org/images/bone-debian-9.5-iot-armhf-2018-10-07-4gb.img.xz
